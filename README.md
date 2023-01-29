@@ -8,6 +8,8 @@ Feel free to create an issue/PR if you want to see anything else implemented.
 
 ## Screenshots
 
+[Completion in Action](https://user-images.githubusercontent.com/522465/215312040-d5e91a6b-cffa-48f1-909f-360328b5af79.webm)
+
 ## Installation
 
 ### [packer.nvim](https://github.com/wbthomason/packer.nvim)
