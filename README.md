@@ -53,6 +53,8 @@ your browser and pasting it into API token request.
 
 ## Options
 
+- `config_path`: the path to the config file, used to store the API key.
+- `bin_path`: the path to the directory where the Codeium server will be downloaded to.
 - `api`: information about the API server to use:
   - `host`: the hostname
   - `port`: the port
