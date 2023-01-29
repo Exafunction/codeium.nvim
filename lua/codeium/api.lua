@@ -39,7 +39,10 @@ function Server.load_api_key()
 	local json, err = io.read_json(config.options.config_path)
 	if err then
 		if err == "ENOENT" then
-			vim.notify("Please log into Codeium with :Codeium Auth", vim.log.levels.INFO)
+			-- Allow any UI plugins to load
+			vim.defer_fn(function()
+				vim.notify("Please log into Codeium with :Codeium Auth", vim.log.levels.INFO)
+			end, 100)
 		else
 			vim.notify("Failed to load Codeium API key", vim.log.levels.ERROR)
 		end
@@ -64,7 +67,15 @@ function Server.authenticate()
 	local url = "https://www.codeium.com/profile?response_type=token&redirect_uri=vim-show-auth-token&state="
 		.. uuid
 		.. "&scope=openid%20profile%20email&redirect_parameters_type=query"
-	io.get_command_output("xdg-open", url)
+
+	local info = io.get_system_info()
+	if info.os == "linux" then
+		io.get_command_output("xdg-open", url)
+	elseif info.os == "macos" then
+		io.get_command_output("/usr/bin/open", url)
+	else
+		io.get_command_output("start", url)
+	end
 
 	local prompt
 	local function on_submit(value)

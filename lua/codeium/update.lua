@@ -52,7 +52,7 @@ function M.download(callback)
 			"+x",
 			info.bin,
 		}, {
-			on_exit = function(j, s)
+			on_exit = vim.schedule_wrap(function(j, s)
 				if s ~= 0 then
 					log.error("failed to chmod Codeium server ", s, ": ", {
 						stdout = j:result(),
@@ -64,7 +64,7 @@ function M.download(callback)
 				end
 				vim.notify("Codeium server updated")
 				callback(nil)
-			end,
+			end),
 		})):start()
 	end
 
@@ -75,7 +75,7 @@ function M.download(callback)
 			"-d",
 			gz,
 		}, {
-			on_exit = function(j, s)
+			on_exit = vim.schedule_wrap(function(j, s)
 				if s ~= 0 then
 					log.error("failed to unpack Codeium server ", s, ": ", {
 						stdout = j:result(),
@@ -86,7 +86,7 @@ function M.download(callback)
 					return
 				end
 				chmod()
-			end,
+			end),
 		})):start()
 	end
 
@@ -98,7 +98,7 @@ function M.download(callback)
 			gz,
 			info.download_url,
 		}, {
-			on_exit = function(j, s)
+			on_exit = vim.schedule_wrap(function(j, s)
 				if s ~= 0 then
 					log.error("failed to download Codeium server ", s, ": ", {
 						stdout = j:result(),
@@ -109,7 +109,7 @@ function M.download(callback)
 					return
 				end
 				unpack()
-			end,
+			end),
 		})):start()
 	end
 

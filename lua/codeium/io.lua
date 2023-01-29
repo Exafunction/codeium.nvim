@@ -88,7 +88,7 @@ end
 function M.read_json(path)
 	local fd, err, errcode = uv.fs_open(path, "r", 0)
 	if err then
-		if errcode ~= "ENOENT" then
+		if errcode == "ENOENT" then
 			return nil, errcode
 		end
 		log.error("could not open ", path, ": ", err)
@@ -171,7 +171,7 @@ function M.get_system_info()
 	if uname == "Linux" then
 		os = "linux"
 	elseif uname == "Darwin" then
-		os = "mac"
+		os = "macos"
 	else
 		os = "windows"
 	end
