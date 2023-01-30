@@ -1,8 +1,7 @@
-local log = require("codeium.log")
 local config = require("codeium.config")
 local versions = require("codeium.versions")
 local io = require("codeium.io")
-local Job = require("plenary.job")
+local notify = require("codeium.notify")
 local M = {}
 
 local cached = nil
@@ -46,71 +45,54 @@ function M.download(callback)
 	local gz = info.bin .. ".gz"
 	vim.fn.mkdir(info.dir, "p")
 
-	local function chmod()
-		Job:new(config.job_args({
-			"chmod",
-			"+x",
+	local function hint(err)
+		notify.info(
+			"you can manually install the server",
+			"download and extract '",
+			info.download_url,
+			"' to '",
 			info.bin,
-		}, {
-			on_exit = vim.schedule_wrap(function(j, s)
-				if s ~= 0 then
-					log.error("failed to chmod Codeium server ", s, ": ", {
-						stdout = j:result(),
-						stderr = j:stderr_result(),
-					})
-					vim.notify("Failed to chmod Codeium server")
-					callback("chmod_failed")
-					return
-				end
-				vim.notify("Codeium server updated")
+			"'"
+		)
+		callback(err)
+	end
+
+	local function chmod()
+		io.set_executable(info.bin, function(_, err)
+			if err then
+				notify.error("failed to chmod server", err)
+				hint("chmod_failed")
+			else
+				notify.info("server updated")
 				callback(nil)
-			end),
-		})):start()
+			end
+		end)
 	end
 
 	local function unpack()
-		vim.notify("Unpacking Codeium server", vim.log.levels.INFO)
-		Job:new(config.job_args({
-			"gzip",
-			"-d",
-			gz,
-		}, {
-			on_exit = vim.schedule_wrap(function(j, s)
-				if s ~= 0 then
-					log.error("failed to unpack Codeium server ", s, ": ", {
-						stdout = j:result(),
-						stderr = j:stderr_result(),
-					})
-					vim.notify("Failed to unpack Codeium server")
-					callback("unpack_failed")
-					return
-				end
+		notify.info("unpacking server")
+		io.gunzip(gz, function(_, err)
+			if err then
+				notify.error("failed to unpack server")
+				hint("unpack_failed")
+			else
+				notify.info("server unpacked")
 				chmod()
-			end),
-		})):start()
+			end
+		end)
 	end
 
 	local function download()
-		vim.notify("Downloading Codeium Server", vim.log.levels.INFO)
-		Job:new(config.job_args({
-			"curl",
-			"-Lo",
-			gz,
-			info.download_url,
-		}, {
-			on_exit = vim.schedule_wrap(function(j, s)
-				if s ~= 0 then
-					log.error("failed to download Codeium server ", s, ": ", {
-						stdout = j:result(),
-						stderr = j:stderr_result(),
-					})
-					vim.notify("Failed to download Codeium server")
-					callback("download_failed")
-					return
-				end
+		notify.info("downloading server")
+		io.download(info.download_url, gz, function(_, err)
+			if err then
+				notify.error("failed to download server", err)
+				hint("download_failed")
+			else
+				notify.info("server downloaded")
 				unpack()
-			end),
-		})):start()
+			end
+		end)
 	end
 
 	download()

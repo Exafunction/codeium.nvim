@@ -1,13 +1,14 @@
-local Job = require("plenary.job")
 local versions = require("codeium.versions")
 local config = require("codeium.config")
 local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
+local notify = require("codeium.notify")
 local api_key = nil
 
 local function find_port(manager_dir, start_time)
-	for _, file in ipairs(io.readdir(manager_dir)) do
+	local files, err = io.readdir(manager_dir)
+	for _, file in ipairs(files) do
 		local number = tonumber(file.name, 10)
 		if file.type == "file" and number and io.stat_mtime(manager_dir .. "/" .. file.name) >= start_time then
 			return number
@@ -41,12 +42,13 @@ function Server.load_api_key()
 		if err == "ENOENT" then
 			-- Allow any UI plugins to load
 			vim.defer_fn(function()
-				vim.notify("Please log into Codeium with :Codeium Auth", vim.log.levels.INFO)
+				notify.info("please log in with :Codeium Auth")
 			end, 100)
 		else
-			vim.notify("Failed to load Codeium API key", vim.log.levels.ERROR)
+			notify.info("failed to load the api key")
 		end
 		api_key = nil
+		return
 	end
 	api_key = (json or {}).api_key
 end
@@ -56,99 +58,66 @@ function Server.save_api_key()
 		api_key = api_key,
 	})
 	if result then
-		vim.notify("Failed to save the Codeium API key", vim.log.levels.ERROR)
+		notify.error("failed to save the api key", result)
 	end
 end
 
 function Server.authenticate()
-	local Input = require("nui.input")
 	local attempts = 0
 	local uuid = io.generate_uuid()
 	local url = "https://www.codeium.com/profile?response_type=token&redirect_uri=vim-show-auth-token&state="
 		.. uuid
 		.. "&scope=openid%20profile%20email&redirect_parameters_type=query"
 
-	local info = io.get_system_info()
-	if info.os == "linux" then
-		io.get_command_output("xdg-open", url)
-	elseif info.os == "macos" then
-		io.get_command_output("/usr/bin/open", url)
-	else
-		io.get_command_output("start", url)
-	end
-
 	local prompt
 	local function on_submit(value)
-		Job:new(config.job_args({
-			"curl",
-			"-s",
-			"https://api.codeium.com/register_user/",
-			"--header",
-			"Content-Type: application/json",
-			"--data",
-			vim.fn.json_encode({
+		if not value then
+			return
+		end
+
+		io.post("https://api.codeium.com/register_user/", {
+			headers = {
+				accept = "application/json",
+			},
+			body = {
 				firebase_id_token = value,
-			}),
-		}, {
-			on_exit = vim.schedule_wrap(function(j, r)
-				if r ~= 0 then
-					log.error("failed to validate token ", r, ": ", {
-						stdout = j:result(),
-						stderr = j:stderr_result(),
-					})
-					vim.notify("Failed to validate token", vim.log.levels.ERROR)
+			},
+			callback = function(body, err)
+				if err and not err.response then
+					notify.error("failed to validate token", err)
 					return
 				end
 
-				local ok, json = pcall(vim.fn.json_decode, j:result())
+				local ok, json = pcall(vim.fn.json_decode, body)
 				if not ok then
-					log.error("failed to decode JSON: ", json)
-					vim.notify("Failed to validate token", vim.log.levels.ERROR)
+					notify.error("failed to decode json", json)
 					return
 				end
-
 				if json and json.api_key and json.api_key ~= "" then
 					api_key = json.api_key
 					Server.save_api_key()
-					vim.notify("API key saved", vim.log.levels.INFO)
+					notify.info("api key saved")
 					return
 				end
 
 				attempts = attempts + 1
 				if attempts == 3 then
-					vim.notify("Too many failed attempts", vim.log.levels.ERROR)
+					notify.error("too many failed attempts")
 					return
 				end
-				vim.notify("API key is incorrect", vim.log.levels.ERROR)
-				prompt()
-			end),
-		})):start()
+				notify.error("api key is incorrect")
+				prompt(true)
+			end,
+		})
 	end
 
-	prompt = function()
-		Input({
-			position = "50%",
-			size = {
-				width = 20,
-			},
-			border = {
-				style = "rounded",
-				text = {
-					top = "API Key",
-					top_align = "center",
-				},
-			},
-			win_options = {
-				winhighlight = "Normal:Normal,FloatBorder:Normal",
-			},
-		}, {
-			prompt = "> ",
-			on_close = function() end,
-			on_submit = on_submit,
-		}):mount()
+	prompt = function(proceed)
+		if proceed then
+			require("codeium.views.auth-menu")(url, on_submit)
+		end
 	end
 
-	prompt()
+	prompt(true)
 end
 
 function Server:new()
@@ -164,31 +133,18 @@ function Server:new()
 	local healthy = false
 
 	local function request(fn, payload, callback)
-		callback = vim.schedule_wrap(callback)
-		Job:new(config.job_args({
-			"curl",
-			"http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn,
-			"--header",
-			"Content-Type: application/json",
-			"--data",
-			vim.fn.json_encode(payload),
-		}, {
-			on_exit = function(j, return_val)
-				callback(return_val, j:result(), j:stderr_result())
-			end,
-		})):start()
+		io.post("http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn, {
+			body = payload,
+			callback = callback,
+		})
 	end
 
 	local function do_heartbeat()
 		request("Heartbeat", {
 			metadata = get_request_metadata(),
-		}, function(code, stdout, stderr)
-			if code ~= 0 then
-				log.warn("Codeium heartbeat failed ", code, ": ", {
-					stdout = stdout,
-					stderr = stderr,
-				})
-				vim.notify("Codeium heartbeat failed", vim.log.levels.WARN)
+		}, function(_, err)
+			if err then
+				notify.warn("heartbeat failed", err)
 			else
 				healthy = true
 			end
@@ -213,7 +169,25 @@ function Server:new()
 		local manager_dir = io.tempdir("codeium/manager")
 		local start_time = io.touch(manager_dir .. "/start")
 
-		job = Job:new(config.job_args({
+		local function on_exit(_, err)
+			if current_cookie ~= cookie then
+				return
+			end
+
+			healthy = false
+			if err then
+				job = nil
+				current_cookie = nil
+
+				notify.error("codeium server crashed", err)
+				io.timer(1000, 0, function()
+					log.debug("restarting server after crash")
+					m.start()
+				end)
+			end
+		end
+
+		job = io.job({
 			update.get_bin_info().bin,
 			"--api_server_host",
 			config.options.api.host,
@@ -221,34 +195,19 @@ function Server:new()
 			config.options.api.port,
 			"--manager_dir",
 			manager_dir,
-		}, {
-			on_exit = function(j, code)
-				if current_cookie ~= cookie then
-					return
-				end
-
-				healthy = false
-				if code ~= 0 then
-					job = nil
-					current_cookie = nil
-
-					local stdout = j:result()
-					local stderr = j:stderr_result()
-
-					log.error("Codeium server crashed ", code, ": ", {
-						stdout = stdout,
-						stderr = stderr,
-					})
-					vim.notify("Codeium server crashed", vim.log.levels.ERROR)
-
-					io.timer(1000, 0, function()
-						log.debug("Restarting server after crash")
-						m.start()
-					end)
-				end
-			end,
-		}))
+			on_exit = on_exit,
+		})
 		job:start()
+
+		local function start_heartbeat()
+			io.timer(100, 5000, function(cancel_heartbeat)
+				if current_cookie ~= cookie then
+					cancel_heartbeat()
+				else
+					do_heartbeat()
+				end
+			end)
+		end
 
 		io.timer(100, 500, function(cancel)
 			if current_cookie ~= cookie then
@@ -259,14 +218,7 @@ function Server:new()
 			port = find_port(manager_dir, start_time)
 			if port then
 				cancel()
-
-				io.timer(100, 5000, function(cancel_heartbeat)
-					if current_cookie ~= cookie then
-						cancel_heartbeat()
-					else
-						do_heartbeat()
-					end
-				end)
+				start_heartbeat()
 			end
 		end)
 	end
@@ -280,26 +232,18 @@ function Server:new()
 			metadata = metadata,
 			editor_options = editor_options,
 			document = document,
-		}, function(code, stdout, stderror)
+		}, function(body, err)
 			request_id = 0
 
-			if code ~= 0 then
-				log.error("Codeium completion request failed ", code, ": ", {
-					stdout = stdout,
-					stderr = stderror,
-				})
-				vim.notify("Codeium request failed", vim.log.levels.ERROR)
+			if err then
+				notify.error("completion request failed", err)
 				callback(false, nil)
 				return
 			end
 
-			local ok, json = pcall(vim.fn.json_decode, stdout)
+			local ok, json = pcall(vim.fn.json_decode, body)
 			if not ok then
-				log.error("Invalid JSON received: ", {
-					value = stdout,
-					error = json,
-				})
-				vim.notify("Codeium request failed", vim.log.levels.ERROR)
+				notify.error("completion request failed", "invalid JSON:", json)
 				return
 			end
 
@@ -313,12 +257,9 @@ function Server:new()
 
 			request("CancelRequest", {
 				request_id = request_id,
-			}, function(code, stdout, stderr)
-				if code ~= 0 then
-					log.warn("Codeium failed to cancel in-flight request ", code, ": ", {
-						stdout = stdout,
-						stderr = stderr,
-					})
+			}, function(_, err)
+				if err then
+					log.warn("failed to cancel in-flight request", err)
 				end
 			end)
 		end
