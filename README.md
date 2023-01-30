@@ -19,7 +19,8 @@ use {
     "jcdickinson/codeium.nvim",
     requires = {
         "nvim-lua/plenary.nvim",
-        "MunifTanjim/nui.nvim"
+        "MunifTanjim/nui.nvim",
+        "hrsh7th/nvim-cmp",
     },
     config = function()
         require("codeium").setup({
@@ -35,14 +36,14 @@ use {
     "jcdickinson/codeium.nvim",
     dependencies = {
         "nvim-lua/plenary.nvim",
-        "MunifTanjim/nui.nvim"
+        "MunifTanjim/nui.nvim",
+        "hrsh7th/nvim-cmp",
     },
     config = function()
         require("codeium").setup({
         })
     end
-}
-
+},
 ```
 
 ## Usage
