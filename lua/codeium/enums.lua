@@ -73,5 +73,6 @@ return {
 		raku = "perl",
 		sh = "shell",
 		text = "plaintext",
+		[""] = "plaintext",
 	},
 }
