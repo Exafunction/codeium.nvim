@@ -77,6 +77,19 @@ function Source:complete(params, callback)
 	table.insert(lines, "")
 	local text = table.concat(lines, line_ending)
 
+	local function handle_completions(completion_items)
+		local duplicates = {}
+		local completions = {}
+		local before_line_length = string.len(before_line)
+		for _, comp in ipairs(completion_items) do
+			if not duplicates[comp.completion.text] then
+				duplicates[comp.completion.text] = true
+				table.insert(completions, codeium_to_cmp(comp, offset, before_line_length))
+			end
+		end
+		callback(completions)
+	end
+
 	self.server.request_completion(
 		{
 			editor_language = filetype,
@@ -92,12 +105,7 @@ function Source:complete(params, callback)
 			end
 
 			if json and json.state and json.state.state == "CODEIUM_STATE_SUCCESS" and json.completionItems then
-				local completions = {}
-				local before_line_length = string.len(before_line)
-				for _, comp in ipairs(json.completionItems) do
-					table.insert(completions, codeium_to_cmp(comp, offset, before_line_length))
-				end
-				callback(completions)
+				handle_completions(json.completionItems)
 			else
 				callback(nil)
 			end
