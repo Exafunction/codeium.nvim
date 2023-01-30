@@ -187,6 +187,10 @@ function Server:new()
 			end
 		end
 
+		local function on_output(_, v, j)
+			log.debug(j.pid .. ": " .. v)
+		end
+
 		job = io.job({
 			update.get_bin_info().bin,
 			"--api_server_host",
@@ -195,7 +199,11 @@ function Server:new()
 			config.options.api.port,
 			"--manager_dir",
 			manager_dir,
+			enable_handlers = true,
+			enable_recording = false,
 			on_exit = on_exit,
+			on_stdout = on_output,
+			on_stderr = on_output,
 		})
 		job:start()
 
