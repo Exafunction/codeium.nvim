@@ -236,6 +236,10 @@ function Server:new()
 			request_id = 0
 
 			if err then
+				if err.status == 408 then
+					-- Timeout error
+					return callback(false, nil)
+				end
 				notify.error("completion request failed", err)
 				callback(false, nil)
 				return
