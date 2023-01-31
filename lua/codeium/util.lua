@@ -1,12 +1,12 @@
 local enums = require("codeium.enums")
 local M = {}
 
-function M.fallback_call(calls)
+function M.fallback_call(calls, with_filter)
 	local num = #calls
 	local fns = num - 1
 	for i = 1, fns do
 		local ok, result = pcall(unpack(calls[i]))
-		if ok then
+		if ok and (with_filter ~= nil and with_filter(result)) then
 			return result
 		end
 	end
@@ -14,6 +14,10 @@ function M.fallback_call(calls)
 end
 
 function M.get_editor_options(bufnr)
+	local function greater_than_zero(v)
+		return v > 0
+	end
+
 	return {
 		tab_size = M.fallback_call({
 			{ vim.api.nvim_buf_get_option, bufnr, "shiftwidth" },
@@ -21,7 +25,7 @@ function M.get_editor_options(bufnr)
 			{ vim.api.nvim_get_option, "shiftwidth" },
 			{ vim.api.nvim_get_option, "tabstop" },
 			4,
-		}),
+		}, greater_than_zero),
 		insert_spaces = M.fallback_call({
 			{ vim.api.nvim_buf_get_option, bufnr, "expandtab" },
 			{ vim.api.nvim_get_option, "expandtab" },
