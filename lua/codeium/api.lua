@@ -168,9 +168,9 @@ function Server:new()
 
 		local manager_dir = (function()
 			if not config.manager_path then 
-			io.tempdir("codeium/manager")
+			return io.tempdir("codeium/manager")
 			else
-			config.manager_path
+			return config.manager_path
 			end
 			end)()
 			
