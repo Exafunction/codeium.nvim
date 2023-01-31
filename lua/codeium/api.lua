@@ -166,7 +166,14 @@ function Server:new()
 			return
 		end
 
-		local manager_dir = io.tempdir("codeium/manager")
+		local manager_dir = (function()
+			if not config.manager_path then 
+			io.tempdir("codeium/manager")
+			else
+			config.manager_path
+			end
+			end)()
+			
 		local start_time = io.touch(manager_dir .. "/start")
 
 		local function on_exit(_, err)
