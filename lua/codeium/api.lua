@@ -133,7 +133,8 @@ function Server:new()
 	local healthy = false
 
 	local function request(fn, payload, callback)
-		io.post("http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn, {
+		local url = "http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
+		io.post(url, {
 			body = payload,
 			callback = callback,
 		})
@@ -260,6 +261,7 @@ function Server:new()
 				return
 			end
 
+			log.trace("completion: ", json)
 			callback(true, json)
 		end)
 

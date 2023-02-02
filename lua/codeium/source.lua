@@ -46,6 +46,10 @@ function Source:get_position_encoding_kind()
 end
 
 function Source:complete(params, callback)
+	if self._cancel_previous_request then
+		self._cancel_previous_request()
+	end
+
 	local context = params.context
 	local offset = params.offset
 	local cursor = context.cursor
@@ -90,6 +94,7 @@ function Source:complete(params, callback)
 	end
 
 	remove_event = require("cmp").event:on("menu_closed", cancel)
+	self._cancel_previous_request = cancel
 
 	local function handle_completions(completion_items)
 		local duplicates = {}
