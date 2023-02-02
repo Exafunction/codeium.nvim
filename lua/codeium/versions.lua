@@ -11,7 +11,7 @@ if not full_match then
 	end
 end
 
-local extension_version = "1.1.24"
+local extension_version = "1.1.32"
 
 return {
 	nvim = full_match,
