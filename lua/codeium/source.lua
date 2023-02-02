@@ -15,7 +15,6 @@ local function codeium_to_cmp(comp, offset, before_line_length)
 	local label = comp.completion.text
 	return {
 		type = 1,
-		detail = label,
 		documentation = label,
 		label = string.sub(label, offset),
 		insertText = string.sub(label, before_line_length),
