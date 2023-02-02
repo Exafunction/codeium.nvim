@@ -180,8 +180,13 @@ end
 function M.get_command_output(...)
 	local job = M.job({ ... })
 	local output, err = job:sync(1000)
+	if err then
+		log.debug("job failed ", err)
+		return nil, err
+	end
 	local result, err = check_job(job, err)
 	if err then
+		log.debug("job failed: ", err)
 		return nil, err
 	else
 		return output[1], nil
