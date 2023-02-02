@@ -199,6 +199,7 @@ function Server:new()
 			config.options.api.port,
 			"--manager_dir",
 			manager_dir,
+			tool_name = "language_server",
 			enable_handlers = true,
 			enable_recording = false,
 			on_exit = on_exit,

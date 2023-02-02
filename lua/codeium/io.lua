@@ -232,7 +232,8 @@ end
 -- @return plenary.Job
 function M.job(cmd)
 	local o = config.options
-	local tool = o.tools[cmd[1]]
+	local tool_name = cmd.tool_name or cmd[1]
+	local tool = o.tools[tool_name]
 	local wrapper
 
 	if tool then
@@ -263,6 +264,9 @@ function M.job(cmd)
 			cmd[i] = wrapper[i]
 		end
 	end
+
+	-- Remove custom properties
+	cmd.tool_name = nil
 
 	local result = {}
 	result.args = {}
