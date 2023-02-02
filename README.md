@@ -64,6 +64,7 @@ your browser and pasting it into API token request.
   - `uuidgen`
   - `curl`
   - `gzip`
+  - `language_server`: The path to the language server downloaded from the [official source.](https://github.com/Exafunction/codeium/releases/tag/language-server-v1.1.32)
 - `wrapper`: the path to a wrapper script/binary that is used to execute any
   binaries not listed under `tools`. This is primarily useful for NixOS, where
   a FHS wrapper can be used for the downloaded codeium server.
