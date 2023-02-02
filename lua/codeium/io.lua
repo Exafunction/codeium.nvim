@@ -12,12 +12,16 @@ local function check_job(job, status)
 	if status == 0 then
 		return job, nil
 	else
-		return job,
-			{
-				code = status,
-				out = table.concat(job:result(), "\n"),
-				err = table.concat(job:stderr_result(), "\n"),
-			}
+		if job.enable_recording then
+			return job,
+				{
+					code = status,
+					out = table.concat(job:result(), "\n"),
+					err = table.concat(job:stderr_result(), "\n"),
+				}
+		else
+			return job, { code = status }
+		end
 	end
 end
 
@@ -180,7 +184,7 @@ end
 function M.get_command_output(...)
 	local job = M.job({ ... })
 	local output, err = job:sync(1000)
-	if err then
+	if err and err ~= 0 then
 		log.debug("job failed ", err)
 		return nil, err
 	end
