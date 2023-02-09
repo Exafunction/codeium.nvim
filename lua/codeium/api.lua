@@ -250,6 +250,15 @@ function Server:new()
 					-- Timeout error
 					return callback(false, nil)
 				end
+
+				local ok, json = pcall(vim.fn.json_decode, err.response.body)
+				if ok and json and json.state and json.state.state == "CODEIUM_STATE_INACTIVE" then
+					if json.state.message then
+						log.debug("completion request failed", json.state.message)
+					end
+					return callback(false, nil)
+				end
+
 				notify.error("completion request failed", err)
 				callback(false, nil)
 				return
