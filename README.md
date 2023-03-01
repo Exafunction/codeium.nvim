@@ -72,7 +72,7 @@ your browser and pasting it into API token request.
 ### [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)
 
 After calling `setup`, this plugin will register a source in nvim-cmp. nvim-cmp
-can then be set up to use this source using the `sources` configuration:
+can then be set up to use this source using the `sources` configuration: 
 
 ```lua
 cmp.setup({
@@ -80,6 +80,23 @@ cmp.setup({
     sources = {
         -- ...
         { name = "codeium" }
+    }
+})
+```
+
+
+To set a symbol for codeium using lspkind, use the `Codeium` keyword. Example:
+
+```lua
+cmp.setup({
+    -- ...
+    formatting = {
+        format = require('lspkind').cmp_format({
+            mode = "symbol",
+            maxwidth = 50,
+            ellipsis_char = '...',
+            symbol_map = { Codeium = "", }
+        })
     }
 })
 ```
