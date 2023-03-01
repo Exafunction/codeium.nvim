@@ -1,6 +1,8 @@
 local enums = require("codeium.enums")
 local util = require("codeium.util")
 
+local cancel_previous_request = nil
+
 local function utf8len(str)
 	if str == "" or not str then
 		return 0
@@ -47,8 +49,9 @@ function Source:get_position_encoding_kind()
 end
 
 function Source:complete(params, callback)
-	if self._cancel_previous_request then
-		self._cancel_previous_request()
+	if cancel_previous_request then
+		cancel_previous_request()
+		cancel_previous_request = nil
 	end
 
 	local context = params.context
@@ -96,7 +99,7 @@ function Source:complete(params, callback)
 	end
 
 	remove_event = require("cmp").event:on("menu_closed", cancel)
-	self._cancel_previous_request = cancel
+	cancel_previous_request = cancel
 
 	local function handle_completions(completion_items)
 		local duplicates = {}
