@@ -11,13 +11,14 @@ local function utf8len(str)
 	return string.len(str)
 end
 
-local function codeium_to_cmp(comp, offset, before_line_length)
-	local label = comp.completion.text
+local function codeium_to_cmp(comp, offset, right_offset)
+	local documentation = comp.completion.text
+	local label = string.sub(documentation, offset, -(right_offset + 1))
 	return {
 		type = 1,
 		documentation = label,
-		label = string.sub(label, offset),
-		insertText = string.sub(label, before_line_length),
+		label = label,
+		insertText = label,
 		cmp = {
 			kind_text = "Suggestion",
 		},
@@ -56,6 +57,7 @@ function Source:complete(params, callback)
 	local bufnr = context.bufnr
 	local filetype = enums.filetype_aliases[context.filetype] or context.filetype or "text"
 	local language = enums.languages[filetype] or enums.languages.unspecified
+	local after_line_length = string.len(context.cursor_before_line)
 	local before_line = context.cursor_before_line
 	local line_ending = util.get_newline(bufnr)
 	local line_ending_len = utf8len(line_ending)
@@ -99,11 +101,10 @@ function Source:complete(params, callback)
 	local function handle_completions(completion_items)
 		local duplicates = {}
 		local completions = {}
-		local before_line_length = string.len(before_line)
 		for _, comp in ipairs(completion_items) do
 			if not duplicates[comp.completion.text] then
 				duplicates[comp.completion.text] = true
-				table.insert(completions, codeium_to_cmp(comp, offset, before_line_length))
+				table.insert(completions, codeium_to_cmp(comp, offset, after_line_length))
 			end
 		end
 		callback(completions)
