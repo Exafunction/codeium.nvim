@@ -20,7 +20,7 @@ local function codeium_to_cmp(comp, offset, right_offset)
 		label = label,
 		insertText = label,
 		cmp = {
-			kind_text = "Suggestion",
+			kind_text = "Codeium",
 		},
 	}
 end
