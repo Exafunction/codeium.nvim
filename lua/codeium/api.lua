@@ -8,6 +8,14 @@ local api_key = nil
 
 local function find_port(manager_dir, start_time)
 	local files, err = io.readdir(manager_dir)
+	if err then
+		log.warn("error finding port file: ", err)
+	end
+
+	if not files then
+		return nil
+	end
+
 	for _, file in ipairs(files) do
 		local number = tonumber(file.name, 10)
 		if file.type == "file" and number and io.stat_mtime(manager_dir .. "/" .. file.name) >= start_time then
