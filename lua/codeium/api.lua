@@ -260,11 +260,21 @@ function Server:new()
 				end
 
 				local ok, json = pcall(vim.fn.json_decode, err.response.body)
-				if ok and json and json.state and json.state.state == "CODEIUM_STATE_INACTIVE" then
-					if json.state.message then
-						log.debug("completion request failed", json.state.message)
+				if ok and json then
+					if json.state and json.state.state == "CODEIUM_STATE_INACTIVE" then
+						if json.state.message then
+							log.debug("completion request failed", json.state.message)
+						end
+						return callback(false, nil)
 					end
-					return callback(false, nil)
+					if json.code == "canceled" then
+						log.debug("completion request cancelled at the server", json.message)
+						return callback(false, nil)
+					end
+					if err.status == 100 and json.code then
+						log.debug("completion request failed", json)
+						return callback(false, nil)
+					end
 				end
 
 				notify.error("completion request failed", err)
