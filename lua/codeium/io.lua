@@ -370,7 +370,7 @@ function M.post(url, params)
 				code = out.exit,
 				err = "curl failed",
 			})
-		elseif out.status < 200 or out.status > 299 then
+		elseif out.status > 299 then
 			cb(out.body, {
 				code = 0,
 				status = out.status,
