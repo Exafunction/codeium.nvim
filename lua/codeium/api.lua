@@ -271,10 +271,6 @@ function Server:new()
 						log.debug("completion request cancelled at the server", json.message)
 						return callback(false, nil)
 					end
-					if err.status == 100 and json.code then
-						log.debug("completion request failed", json)
-						return callback(false, nil)
-					end
 				end
 
 				notify.error("completion request failed", err)
