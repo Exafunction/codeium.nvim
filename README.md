@@ -19,7 +19,6 @@ use {
     "jcdickinson/codeium.nvim",
     requires = {
         "nvim-lua/plenary.nvim",
-        "MunifTanjim/nui.nvim",
         "hrsh7th/nvim-cmp",
     },
     config = function()
@@ -36,7 +35,6 @@ use {
     "jcdickinson/codeium.nvim",
     dependencies = {
         "nvim-lua/plenary.nvim",
-        "MunifTanjim/nui.nvim",
         "hrsh7th/nvim-cmp",
     },
     config = function()
@@ -72,7 +70,7 @@ your browser and pasting it into API token request.
 ### [nvim-cmp](https://github.com/hrsh7th/nvim-cmp)
 
 After calling `setup`, this plugin will register a source in nvim-cmp. nvim-cmp
-can then be set up to use this source using the `sources` configuration: 
+can then be set up to use this source using the `sources` configuration:
 
 ```lua
 cmp.setup({
@@ -83,7 +81,6 @@ cmp.setup({
     }
 })
 ```
-
 
 To set a symbol for codeium using lspkind, use the `Codeium` keyword. Example:
 
