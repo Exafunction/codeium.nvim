@@ -41,15 +41,16 @@ end
 
 function M.touch(path)
 	local fd, err = uv.fs_open(path, "w+", default_mod)
-	if err then
+	if err or not fd then
 		log.error("failed to create file ", path, ": ", err)
 		return nil
 	end
 
-	local stat, err = uv.fs_fstat(fd)
+	local stat
+	stat, err = uv.fs_fstat(fd)
 	uv.fs_close(fd)
 
-	if err then
+	if err or not stat then
 		log.error("could not stat ", path, ": ", err)
 		return nil
 	end
@@ -59,7 +60,7 @@ end
 
 function M.stat_mtime(path)
 	local stat, err = uv.fs_stat(path)
-	if err then
+	if err or not stat then
 		log.error("could not stat ", path, ": ", err)
 		return nil
 	end
@@ -69,7 +70,7 @@ end
 
 function M.exists(path)
 	local stat, err = uv.fs_stat(path)
-	if err then
+	if err or not stat then
 		return false
 	end
 	return stat.type == "file"
@@ -120,7 +121,7 @@ end
 
 function M.read_json(path)
 	local fd, err, errcode = uv.fs_open(path, "r", default_mod)
-	if err then
+	if err or not fd then
 		if errcode == "ENOENT" then
 			return nil, errcode
 		end
@@ -129,7 +130,7 @@ function M.read_json(path)
 	end
 
 	local stat, err, errcode = uv.fs_fstat(fd)
-	if err then
+	if err or not stat then
 		uv.fs_close(fd)
 		log.error("could not stat ", path, ": ", err)
 		return nil, errcode
@@ -166,7 +167,7 @@ function M.write_json(path, json)
 	end
 
 	local fd, err, errcode = uv.fs_open(path, "w+", default_mod)
-	if err then
+	if err or not fd then
 		log.error("could not open ", path, ": ", err)
 		return nil, errcode
 	end
