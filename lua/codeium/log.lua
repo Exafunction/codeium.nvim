@@ -1,5 +1,5 @@
 local p_debug = vim.fn.getenv("DEBUG_CODEIUM")
-if p_debug == vim.NIL then
+if p_debug == vim.NIL or type(p_debug) ~= "string" then
 	p_debug = "info"
 end
 

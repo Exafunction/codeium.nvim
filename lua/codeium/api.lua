@@ -8,6 +8,14 @@ local api_key = nil
 
 local function find_port(manager_dir, start_time)
 	local files, err = io.readdir(manager_dir)
+	if err then
+		log.warn("error finding port file: ", err)
+	end
+
+	if not files then
+		return nil
+	end
+
 	for _, file in ipairs(files) do
 		local number = tonumber(file.name, 10)
 		if file.type == "file" and number and io.stat_mtime(manager_dir .. "/" .. file.name) >= start_time then
@@ -133,7 +141,8 @@ function Server:new()
 	local healthy = false
 
 	local function request(fn, payload, callback)
-		io.post("http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn, {
+		local url = "http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
+		io.post(url, {
 			body = payload,
 			callback = callback,
 		})
@@ -206,6 +215,7 @@ function Server:new()
 			config.options.api.port,
 			"--manager_dir",
 			manager_dir,
+			tool_name = "language_server",
 			enable_handlers = true,
 			enable_recording = false,
 			on_exit = on_exit,
@@ -255,6 +265,21 @@ function Server:new()
 					-- Timeout error
 					return callback(false, nil)
 				end
+
+				local ok, json = pcall(vim.fn.json_decode, err.response.body)
+				if ok and json then
+					if json.state and json.state.state == "CODEIUM_STATE_INACTIVE" then
+						if json.state.message then
+							log.debug("completion request failed", json.state.message)
+						end
+						return callback(false, nil)
+					end
+					if json.code == "canceled" then
+						log.debug("completion request cancelled at the server", json.message)
+						return callback(false, nil)
+					end
+				end
+
 				notify.error("completion request failed", err)
 				callback(false, nil)
 				return
@@ -266,6 +291,7 @@ function Server:new()
 				return
 			end
 
+			log.trace("completion: ", json)
 			callback(true, json)
 		end)
 

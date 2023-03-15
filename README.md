@@ -19,7 +19,6 @@ use {
     "jcdickinson/codeium.nvim",
     requires = {
         "nvim-lua/plenary.nvim",
-        "MunifTanjim/nui.nvim",
         "hrsh7th/nvim-cmp",
     },
     config = function()
@@ -36,7 +35,6 @@ use {
     "jcdickinson/codeium.nvim",
     dependencies = {
         "nvim-lua/plenary.nvim",
-        "MunifTanjim/nui.nvim",
         "hrsh7th/nvim-cmp",
     },
     config = function()
@@ -64,6 +62,7 @@ your browser and pasting it into API token request.
   - `uuidgen`
   - `curl`
   - `gzip`
+  - `language_server`: The path to the language server downloaded from the [official source.](https://github.com/Exafunction/codeium/releases/tag/language-server-v1.1.32)
 - `wrapper`: the path to a wrapper script/binary that is used to execute any
   binaries not listed under `tools`. This is primarily useful for NixOS, where
   a FHS wrapper can be used for the downloaded codeium server.
@@ -79,6 +78,22 @@ cmp.setup({
     sources = {
         -- ...
         { name = "codeium" }
+    }
+})
+```
+
+To set a symbol for codeium using lspkind, use the `Codeium` keyword. Example:
+
+```lua
+cmp.setup({
+    -- ...
+    formatting = {
+        format = require('lspkind').cmp_format({
+            mode = "symbol",
+            maxwidth = 50,
+            ellipsis_char = '...',
+            symbol_map = { Codeium = "", }
+        })
     }
 })
 ```

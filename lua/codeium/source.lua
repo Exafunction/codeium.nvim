@@ -1,6 +1,8 @@
 local enums = require("codeium.enums")
 local util = require("codeium.util")
 
+local cancel_previous_request = nil
+
 local function utf8len(str)
 	if str == "" or not str then
 		return 0
@@ -11,16 +13,21 @@ local function utf8len(str)
 	return string.len(str)
 end
 
-local function codeium_to_cmp(comp, offset, before_line_length)
-	local label = comp.completion.text
+local function codeium_to_cmp(comp, offset, right)
+	local documentation = comp.completion.text
+
+	local label = string.sub(documentation, offset)
+	if string.sub(label, -#right) == right then
+		label = string.sub(label, 1, -#right - 1)
+	end
+
 	return {
 		type = 1,
-		detail = label,
 		documentation = label,
-		label = string.sub(label, offset),
-		insertText = string.sub(label, before_line_length),
+		label = label,
+		insertText = label,
 		cmp = {
-			kind_text = "Suggestion",
+			kind_text = "Codeium",
 		},
 	}
 end
@@ -47,12 +54,18 @@ function Source:get_position_encoding_kind()
 end
 
 function Source:complete(params, callback)
+	if cancel_previous_request then
+		cancel_previous_request()
+		cancel_previous_request = nil
+	end
+
 	local context = params.context
 	local offset = params.offset
 	local cursor = context.cursor
 	local bufnr = context.bufnr
 	local filetype = enums.filetype_aliases[context.filetype] or context.filetype or "text"
 	local language = enums.languages[filetype] or enums.languages.unspecified
+	local after_line = context.cursor_after_line
 	local before_line = context.cursor_before_line
 	local line_ending = util.get_newline(bufnr)
 	local line_ending_len = utf8len(line_ending)
@@ -91,15 +104,15 @@ function Source:complete(params, callback)
 	end
 
 	remove_event = require("cmp").event:on("menu_closed", cancel)
+	cancel_previous_request = cancel
 
 	local function handle_completions(completion_items)
 		local duplicates = {}
 		local completions = {}
-		local before_line_length = string.len(before_line)
 		for _, comp in ipairs(completion_items) do
 			if not duplicates[comp.completion.text] then
 				duplicates[comp.completion.text] = true
-				table.insert(completions, codeium_to_cmp(comp, offset, before_line_length))
+				table.insert(completions, codeium_to_cmp(comp, offset, after_line))
 			end
 		end
 		callback(completions)

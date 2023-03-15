@@ -34,11 +34,54 @@ function M.get_bin_info()
 	return cached
 end
 
+function M.validate(callback)
+	local info = M.get_bin_info()
+	local prefix = "STABLE_BUILD_SCM_REVISION: "
+
+	if not io.exists(info.bin) then
+		callback(info.bin .. " not found")
+		return
+	end
+
+	io.job({
+		info.bin,
+		"-stamp",
+		on_exit = function(self, _)
+			local result = self:result()
+
+			for _, v in ipairs(result) do
+				if string.sub(v, 1, #prefix) == prefix then
+					local stamp = string.sub(v, #prefix + 1)
+					if stamp == versions.extension_stamp then
+						callback(nil)
+						return
+					else
+						notify.error(
+							stamp
+								.. " does not match the expected Codeium server stamp of "
+								.. versions.extension_stamp
+								.. ". Please update to: https://github.com/Exafunction/codeium/releases/tag/language-server-v"
+								.. versions.extension
+						)
+						callback(nil)
+						return
+					end
+				end
+			end
+
+			notify.warn(
+				"the version of the Codeium server could not be determined, make sure it matches " .. versions.extension
+			)
+			callback(nil)
+		end,
+	}):start()
+end
+
 function M.download(callback)
 	local info = M.get_bin_info()
 
 	if io.exists(info.bin) then
-		callback(nil)
+		M.validate(callback)
 		return
 	end
 
@@ -64,7 +107,7 @@ function M.download(callback)
 				hint("chmod_failed")
 			else
 				notify.info("server updated")
-				callback(nil)
+				M.validate(callback)
 			end
 		end)
 	end

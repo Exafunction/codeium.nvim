@@ -12,12 +12,16 @@ local function check_job(job, status)
 	if status == 0 then
 		return job, nil
 	else
-		return job,
-			{
-				code = status,
-				out = table.concat(job:result(), "\n"),
-				err = table.concat(job:stderr_result(), "\n"),
-			}
+		if job.enable_recording then
+			return job,
+				{
+					code = status,
+					out = table.concat(job:result(), "\n"),
+					err = table.concat(job:stderr_result(), "\n"),
+				}
+		else
+			return job, { code = status }
+		end
 	end
 end
 
@@ -37,15 +41,16 @@ end
 
 function M.touch(path)
 	local fd, err = uv.fs_open(path, "w+", default_mod)
-	if err then
+	if err or not fd then
 		log.error("failed to create file ", path, ": ", err)
 		return nil
 	end
 
-	local stat, err = uv.fs_fstat(fd)
+	local stat
+	stat, err = uv.fs_fstat(fd)
 	uv.fs_close(fd)
 
-	if err then
+	if err or not stat then
 		log.error("could not stat ", path, ": ", err)
 		return nil
 	end
@@ -55,7 +60,7 @@ end
 
 function M.stat_mtime(path)
 	local stat, err = uv.fs_stat(path)
-	if err then
+	if err or not stat then
 		log.error("could not stat ", path, ": ", err)
 		return nil
 	end
@@ -65,7 +70,7 @@ end
 
 function M.exists(path)
 	local stat, err = uv.fs_stat(path)
-	if err then
+	if err or not stat then
 		return false
 	end
 	return stat.type == "file"
@@ -116,7 +121,7 @@ end
 
 function M.read_json(path)
 	local fd, err, errcode = uv.fs_open(path, "r", default_mod)
-	if err then
+	if err or not fd then
 		if errcode == "ENOENT" then
 			return nil, errcode
 		end
@@ -125,7 +130,7 @@ function M.read_json(path)
 	end
 
 	local stat, err, errcode = uv.fs_fstat(fd)
-	if err then
+	if err or not stat then
 		uv.fs_close(fd)
 		log.error("could not stat ", path, ": ", err)
 		return nil, errcode
@@ -162,7 +167,7 @@ function M.write_json(path, json)
 	end
 
 	local fd, err, errcode = uv.fs_open(path, "w+", default_mod)
-	if err then
+	if err or not fd then
 		log.error("could not open ", path, ": ", err)
 		return nil, errcode
 	end
@@ -180,8 +185,13 @@ end
 function M.get_command_output(...)
 	local job = M.job({ ... })
 	local output, err = job:sync(1000)
+	if err and err ~= 0 then
+		log.debug("job failed ", err)
+		return nil, err
+	end
 	local result, err = check_job(job, err)
 	if err then
+		log.debug("job failed: ", err)
 		return nil, err
 	else
 		return output[1], nil
@@ -233,7 +243,8 @@ end
 -- @return plenary.Job
 function M.job(cmd)
 	local o = config.options
-	local tool = o.tools[cmd[1]]
+	local tool_name = cmd.tool_name or cmd[1]
+	local tool = o.tools[tool_name]
 	local wrapper
 
 	if tool then
@@ -264,6 +275,9 @@ function M.job(cmd)
 			cmd[i] = wrapper[i]
 		end
 	end
+
+	-- Remove custom properties
+	cmd.tool_name = nil
 
 	local result = {}
 	result.args = {}
@@ -367,7 +381,7 @@ function M.post(url, params)
 				code = out.exit,
 				err = "curl failed",
 			})
-		elseif out.status < 200 or out.status > 299 then
+		elseif out.status > 299 then
 			cb(out.body, {
 				code = 0,
 				status = out.status,
