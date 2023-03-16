@@ -2,6 +2,7 @@ local M = {}
 
 function M.defaults()
 	return {
+		manager_path = nil,
 		bin_path = vim.fn.stdpath("cache") .. "/codeium/bin",
 		config_path = vim.fn.stdpath("cache") .. "/codeium/config.json",
 		api = {
