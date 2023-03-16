@@ -203,15 +203,17 @@ function M.get_system_info()
 	if system_info_cache then
 		return system_info_cache
 	end
-	if vim.fn.has("win32")then 
+
+	if vim.fn.has("win32") == 1 then
 		system_info_cache = {
-		os = "windows",
-		arch = "x86_64",
-		is_arm = false,
-		is_aarch = false,
-		is_x86 = false,
-	}
-		 else 
+			os = "windows",
+			arch = "x86_64",
+			is_arm = false,
+			is_aarch = false,
+			is_x86 = false,
+		}
+		return system_info_cache
+	end
 
 	local uname = M.get_command_output("uname") or "windows"
 	local arch = M.get_command_output("uname", "-m") or "x86_64"
@@ -236,7 +238,6 @@ function M.get_system_info()
 		is_aarch = is_aarch,
 		is_x86 = is_x86,
 	}
-		end
 	return system_info_cache
 end
 

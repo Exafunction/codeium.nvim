@@ -175,14 +175,16 @@ function Server:new()
 			return
 		end
 
-		local manager_dir = (function()
-			if not config.manager_path then 
-			return io.tempdir("codeium/manager")
+		local manager_dir = config.manager_path
+		if not manager_dir then
+			if io.get_system_info().os == "windows" then
+				manager_dir = vim.fn.stdpath("cache") .. "/codeium/manager"
+				vim.fn.mkdir(manager_dir, "p")
 			else
-			return config.manager_path
+				manager_dir = io.tempdir("codeium/manager")
 			end
-			end)()
-			
+		end
+
 		local start_time = io.touch(manager_dir .. "/start")
 
 		local function on_exit(_, err)
