@@ -212,32 +212,27 @@ function M.get_system_info()
 			is_aarch = false,
 			is_x86 = false,
 		}
-		return system_info_cache
-	end
-
-	local uname = M.get_command_output("uname") or "windows"
-	local arch = M.get_command_output("uname", "-m") or "x86_64"
-	local os
-
-	if uname == "Linux" then
-		os = "linux"
-	elseif uname == "Darwin" then
-		os = "macos"
 	else
-		os = "windows"
+		local uname = M.get_command_output("uname") or "windows"
+		local arch = M.get_command_output("uname", "-m") or "x86_64"
+		local os
+
+		if uname == "Linux" then
+			os = "linux"
+		elseif uname == "Darwin" then
+			os = "macos"
+		else
+			os = "windows"
+		end
+
+		system_info_cache = {
+			os = os,
+			arch = arch,
+			is_arm = string.find(arch, "arm") ~= nil,
+			is_aarch = string.find(arch, "aarch64") ~= nil,
+			is_x86 = arch == "x86_64",
+		}
 	end
-
-	local is_arm = string.find(arch, "arm") ~= nil
-	local is_aarch = string.find(arch, "aarch64") ~= nil
-	local is_x86 = arch == "x86_64"
-
-	system_info_cache = {
-		os = os,
-		arch = arch,
-		is_arm = is_arm,
-		is_aarch = is_aarch,
-		is_x86 = is_x86,
-	}
 	return system_info_cache
 end
 
