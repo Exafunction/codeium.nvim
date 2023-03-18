@@ -58,10 +58,11 @@ your browser and pasting it into API token request.
   - `host`: the hostname
   - `port`: the port
 - `tools`: paths to binaries used by the plugin:
-  - `uname`
-  - `uuidgen`
-  - `curl`
-  - `gzip`
+  - `uname`: not needed on Windows, defaults given. 
+  - `uuidgen`: not needed on Windows, default implemenation given. 
+  - `curl`: 
+  - `gzip`: not needed on Windows, default implemenation given using powershell.exe Expand-Archive instead 
+
   - `language_server`: The path to the language server downloaded from the [official source.](https://github.com/Exafunction/codeium/releases/tag/language-server-v1.1.32)
 - `wrapper`: the path to a wrapper script/binary that is used to execute any
   binaries not listed under `tools`. This is primarily useful for NixOS, where
