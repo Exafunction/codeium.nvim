@@ -177,11 +177,9 @@ function Server:new()
 
 		local manager_dir = config.manager_path
 		if not manager_dir then
-			if io.get_system_info().os == "windows" then
-				manager_dir = vim.fn.stdpath("cache") .. "/codeium/manager"
+			manager_dir = io.tempdir("codeium/manager")
+			if vim.fn.has("win32") == 1 then
 				vim.fn.mkdir(manager_dir, "p")
-			else
-				manager_dir = io.tempdir("codeium/manager")
 			end
 		end
 
