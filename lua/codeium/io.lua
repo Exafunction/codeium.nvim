@@ -318,20 +318,29 @@ function M.generate_uuid()
 end
 
 function M.gunzip(path, callback)
-	-- TODO: windows
-	if not M.executable("gzip") then
-		if M.get_system_info().os == "windows" then
-			callback(nil, "TODO(gzip is currently required, even on Windows)")
-		else
-			callback(nil, "gzip could not be found")
-		end
-	else
+	if vim.fn.has("win32") then
 		M.job({
-			"gzip",
-			"-d",
+			"powershell.exe",
+			"-noprofile",
+			"-command",
+			"\"Expand-Archive -Path '",
 			path,
+			"' -DestinationPath '",
+			".",
+			"'\"",
 			on_exit = callback,
 		}):start()
+	else
+		if not M.executable("gzip") then
+			callback(nil, "gzip could not be found")
+		else
+			M.job({
+				"gzip",
+				"-d",
+				path,
+				on_exit = callback,
+			}):start()
+		end
 	end
 end
 
