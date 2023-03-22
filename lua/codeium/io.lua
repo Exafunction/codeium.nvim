@@ -4,6 +4,7 @@ local Path = require("plenary.path")
 local Job = require("plenary.job")
 local curl = require("plenary.curl")
 local config = require("codeium.config")
+local util = require("codeium.util")
 local default_mod = 438 -- 666
 
 local M = {}
@@ -204,7 +205,7 @@ function M.get_system_info()
 		return system_info_cache
 	end
 
-	if vim.fn.has("win32") == 1 then
+	if util.has_win32() then
 		system_info_cache = {
 			os = "windows",
 			arch = "x86_64",
@@ -300,7 +301,7 @@ end
 
 function M.generate_uuid()
 	local uuid
-	if vim.fn.has("win32") then
+	if util.has_win32() then
 		uuid = string.gsub("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx", "[xy]", function(c)
 			return string.format("%x", (c == "x") and (math.random(16) - 1) or (((math.random(16) - 1) % 4) + 8))
 		end)
@@ -318,7 +319,7 @@ function M.generate_uuid()
 end
 
 function M.gunzip(path, callback)
-	if vim.fn.has("win32") then
+	if util.has_win32() then
 		M.job({
 			"powershell.exe",
 			"-noprofile",
