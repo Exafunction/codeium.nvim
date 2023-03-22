@@ -212,32 +212,27 @@ function M.get_system_info()
 			is_aarch = false,
 			is_x86 = false,
 		}
-		return system_info_cache
-	end
-
-	local uname = M.get_command_output("uname") or "windows"
-	local arch = M.get_command_output("uname", "-m") or "x86_64"
-	local os
-
-	if uname == "Linux" then
-		os = "linux"
-	elseif uname == "Darwin" then
-		os = "macos"
 	else
-		os = "windows"
+		local uname = M.get_command_output("uname") or "windows"
+		local arch = M.get_command_output("uname", "-m") or "x86_64"
+		local os
+
+		if uname == "Linux" then
+			os = "linux"
+		elseif uname == "Darwin" then
+			os = "macos"
+		else
+			os = "windows"
+		end
+
+		system_info_cache = {
+			os = os,
+			arch = arch,
+			is_arm = string.find(arch, "arm") ~= nil,
+			is_aarch = string.find(arch, "aarch64") ~= nil,
+			is_x86 = arch == "x86_64",
+		}
 	end
-
-	local is_arm = string.find(arch, "arm") ~= nil
-	local is_aarch = string.find(arch, "aarch64") ~= nil
-	local is_x86 = arch == "x86_64"
-
-	system_info_cache = {
-		os = os,
-		arch = arch,
-		is_arm = is_arm,
-		is_aarch = is_aarch,
-		is_x86 = is_x86,
-	}
 	return system_info_cache
 end
 
@@ -304,37 +299,48 @@ function M.job(cmd)
 end
 
 function M.generate_uuid()
-	-- TODO: windows
+	local uuid
+	if vim.fn.has("win32") then
+		uuid = string.gsub("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx", "[xy]", function(c)
+			return string.format("%x", (c == "x") and (math.random(16) - 1) or (((math.random(16) - 1) % 4) + 8))
+		end)
+	end
 	if not M.executable("uuidgen") then
-		if M.get_system_info().os == "windows" then
-			error("TODO(uuidgen is currently required, even on Windows)")
-		else
-			error("uuiden could not be found")
-		end
+		error("uuiden could not be found")
 	else
-		local uuid, err = M.get_command_output("uuidgen")
+		local err
+		uuid, err = M.get_command_output("uuidgen")
 		if err then
 			error("failed to generate UUID: " .. vim.inspect(err))
 		end
-		return uuid
 	end
+	return uuid
 end
 
 function M.gunzip(path, callback)
-	-- TODO: windows
-	if not M.executable("gzip") then
-		if M.get_system_info().os == "windows" then
-			callback(nil, "TODO(gzip is currently required, even on Windows)")
-		else
-			callback(nil, "gzip could not be found")
-		end
-	else
+	if vim.fn.has("win32") then
 		M.job({
-			"gzip",
-			"-d",
+			"powershell.exe",
+			"-noprofile",
+			"-command",
+			"\"Expand-Archive -Path '",
 			path,
+			"' -DestinationPath '",
+			".",
+			"'\"",
 			on_exit = callback,
 		}):start()
+	else
+		if not M.executable("gzip") then
+			callback(nil, "gzip could not be found")
+		else
+			M.job({
+				"gzip",
+				"-d",
+				path,
+				on_exit = callback,
+			}):start()
+		end
 	end
 end
 
