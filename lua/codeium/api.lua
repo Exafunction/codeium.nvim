@@ -4,6 +4,7 @@ local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
+local util = require("codeium.util")
 local api_key = nil
 
 local function find_port(manager_dir, start_time)
@@ -178,7 +179,7 @@ function Server:new()
 		local manager_dir = config.manager_path
 		if not manager_dir then
 			manager_dir = io.tempdir("codeium/manager")
-			if vim.fn.has("win32") == 1 then
+			if util.has_win32() then
 				vim.fn.mkdir(manager_dir, "p")
 			end
 		end
