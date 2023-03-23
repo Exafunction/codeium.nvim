@@ -262,8 +262,8 @@ function Server:new()
 			request_id = 0
 
 			if err then
-				if err.status == 408 then
-					-- Timeout error
+                if err.status == 503 or err.status == 408 then
+					-- Service Unavailable or Timeout error
 					return callback(false, nil)
 				end
 
