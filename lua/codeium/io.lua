@@ -205,35 +205,32 @@ function M.get_system_info()
 		return system_info_cache
 	end
 
-	if util.has_win32() then
-		system_info_cache = {
-			os = "windows",
-			arch = "x86_64",
-			is_arm = false,
-			is_aarch = false,
-			is_x86 = false,
-		}
+	local uname = vim.loop.os_uname()
+	local os = uname.sysname
+
+	if os == "Linux" then
+		os = "linux"
+	elseif os == "Darwin" then
+		os = "macos"
+	elseif os == "Windows_NT" then
+		os = "windows"
 	else
-		local uname = M.get_command_output("uname") or "windows"
-		local arch = M.get_command_output("uname", "-m") or "x86_64"
-		local os
-
-		if uname == "Linux" then
-			os = "linux"
-		elseif uname == "Darwin" then
-			os = "macos"
-		else
-			os = "windows"
-		end
-
-		system_info_cache = {
-			os = os,
-			arch = arch,
-			is_arm = string.find(arch, "arm") ~= nil,
-			is_aarch = string.find(arch, "aarch64") ~= nil,
-			is_x86 = arch == "x86_64",
-		}
+		require("codeium.notify").warn("Unknown sysname: ", os)
 	end
+
+	local arch = uname.machine
+
+	if os == "Darwin" and arch == "arm64" then
+		arch = "aarch64"
+	end
+
+	system_info_cache = {
+		os = os,
+		arch = arch,
+		is_arm = arch == "arm",
+		is_aarch = arch == "aarch64",
+		is_x86 = arch == "x86_64",
+	}
 	return system_info_cache
 end
 

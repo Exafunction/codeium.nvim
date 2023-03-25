@@ -39,7 +39,8 @@ function M.get_newline(bufnr)
 end
 
 function M.has_win32()
-  return vim.call("exists", "*win32") == 1
+	return vim.fn.has("win32")
+	-- return vim.call("exists", "*win32") == 1
 end
 
 return M
