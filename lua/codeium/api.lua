@@ -179,9 +179,7 @@ function Server:new()
 		local manager_dir = config.manager_path
 		if not manager_dir then
 			manager_dir = io.tempdir("codeium/manager")
-			if util.has_win32() then
-				vim.fn.mkdir(manager_dir, "p")
-			end
+			vim.fn.mkdir(manager_dir, "p")
 		end
 
 		local start_time = io.touch(manager_dir .. "/start")
@@ -262,7 +260,7 @@ function Server:new()
 			request_id = 0
 
 			if err then
-                if err.status == 503 or err.status == 408 then
+				if err.status == 503 or err.status == 408 then
 					-- Service Unavailable or Timeout error
 					return callback(false, nil)
 				end

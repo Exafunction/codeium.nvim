@@ -230,6 +230,8 @@ function M.get_system_info()
 		is_arm = arch == "arm",
 		is_aarch = arch == "aarch64",
 		is_x86 = arch == "x86_64",
+		is_unix = os == "linux" or os == "macos",
+		is_windows = os == "windows",
 	}
 	return system_info_cache
 end
@@ -298,7 +300,9 @@ end
 
 function M.generate_uuid()
 	local uuid
-	if util.has_win32() then
+	local os = M.get_system_info()
+
+	if os.is_windows then
 		uuid = string.gsub("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx", "[xy]", function(c)
 			return string.format("%x", (c == "x") and (math.random(16) - 1) or (((math.random(16) - 1) % 4) + 8))
 		end)
@@ -316,7 +320,9 @@ function M.generate_uuid()
 end
 
 function M.gunzip(path, callback)
-	if util.has_win32() then
+	local os = M.get_system_info()
+
+	if os.is_windows then
 		M.job({
 			"powershell.exe",
 			"-noprofile",
