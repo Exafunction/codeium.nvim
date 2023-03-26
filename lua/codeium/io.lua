@@ -368,18 +368,34 @@ function M.set_executable(path, callback)
 end
 
 function M.download(url, path, callback)
-	curl.get(url, {
-		output = path,
-		callback = vim.schedule_wrap(function(out)
-			if out.exit ~= 0 then
-				callback(out, "curl exited with status code " .. out)
-			elseif out.status < 200 or out.status > 399 then
-				callback(out, "http response " .. out.status)
-			else
-				callback(out, nil)
-			end
-		end),
-	})
+	if has_http then
+		http.download_request({
+			http.methods.GET,
+			url,
+			callback = vim.schedule_wrap(function(err, resp)
+				if err then
+					callback(nil, "failed to download file " .. err)
+				elseif resp.code < 200 or resp.code > 399 then
+					callback(resp, "http response " .. resp.status)
+				else
+					callback(resp, nil)
+				end
+			end),
+		}, path)
+	else
+		curl.get(url, {
+			output = path,
+			callback = vim.schedule_wrap(function(out)
+				if out.exit ~= 0 then
+					callback(out, "curl exited with status code " .. out)
+				elseif out.status < 200 or out.status > 399 then
+					callback(out, "http response " .. out.status)
+				else
+					callback(out, nil)
+				end
+			end),
+		})
+	end
 end
 
 function M.post(url, params)
