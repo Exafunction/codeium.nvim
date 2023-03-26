@@ -54,11 +54,6 @@ function Source:get_position_encoding_kind()
 end
 
 function Source:complete(params, callback)
-	if cancel_previous_request then
-		cancel_previous_request()
-		cancel_previous_request = nil
-	end
-
 	local context = params.context
 	local offset = params.offset
 	local cursor = context.cursor
@@ -90,21 +85,8 @@ function Source:complete(params, callback)
 	table.insert(lines, "")
 	local text = table.concat(lines, line_ending)
 
-	local pending_cancellation = nil
-	local remove_event = nil
-	local function cancel()
-		if pending_cancellation then
-			pending_cancellation()
-			pending_cancellation = nil
-		end
-		if remove_event then
-			remove_event()
-			remove_event = nil
-		end
-	end
-
-	remove_event = require("cmp").event:on("menu_closed", cancel)
-	cancel_previous_request = cancel
+	local cancel
+	local remove_event = require("cmp").event:on("menu_closed", cancel)
 
 	local function handle_completions(completion_items)
 		local duplicates = {}
@@ -118,7 +100,7 @@ function Source:complete(params, callback)
 		callback(completions)
 	end
 
-	self.server.request_completion(
+	cancel = self.server.request_completion(
 		{
 			editor_language = filetype,
 			language = language,
@@ -128,7 +110,7 @@ function Source:complete(params, callback)
 		},
 		editor_options,
 		function(success, json)
-			cancel()
+			remove_event()
 
 			if not success then
 				callback(nil)

@@ -25,20 +25,21 @@ local function find_port(manager_dir, start_time)
 	return nil
 end
 
-local function get_request_metadata()
+local cookie_generator = 1
+local function next_cookie()
+	cookie_generator = cookie_generator + 1
+	return cookie_generator
+end
+
+local function get_request_metadata(request_id)
 	return {
 		api_key = api_key,
 		ide_name = "neovim",
 		ide_version = versions.nvim,
 		extension_name = "vim",
 		extension_version = versions.extension,
+		request_id = request_id or next_cookie(),
 	}
-end
-
-local cookie_generator = 1
-local function next_cookie()
-	cookie_generator = cookie_generator + 1
-	return cookie_generator
 end
 
 local Server = {}
@@ -246,22 +247,53 @@ function Server:new()
 		end)
 	end
 
+	local function noop() end
+
+	local pending_request = noop
 	function m.request_completion(document, editor_options, callback)
+		if pending_request then
+			pending_request()
+		end
+
 		local metadata = get_request_metadata()
-		local request_id = next_cookie()
-		metadata.request_id = request_id
+		local this_pending_request
+
+		local complete
+		complete = function(...)
+			complete = noop
+			this_pending_request()
+			callback(...)
+		end
+
+		this_pending_request = function()
+			if pending_request == this_pending_request then
+				pending_request = noop
+			end
+			this_pending_request = noop
+
+			request("CancelRequest", {
+				metadata = get_request_metadata(metadata.request_id),
+				request_id = metadata.request_id,
+			}, function(_, err)
+				if err then
+					log.warn("failed to cancel in-flight request", err)
+				end
+			end)
+			complete(false, nil)
+		end
+		pending_request = this_pending_request
 
 		request("GetCompletions", {
 			metadata = metadata,
 			editor_options = editor_options,
 			document = document,
 		}, function(body, err)
-			request_id = 0
+			this_pending_request()
 
 			if err then
 				if err.status == 503 or err.status == 408 then
 					-- Service Unavailable or Timeout error
-					return callback(false, nil)
+					return complete(false, nil)
 				end
 
 				local ok, json = pcall(vim.fn.json_decode, err.response.body)
@@ -270,16 +302,16 @@ function Server:new()
 						if json.state.message then
 							log.debug("completion request failed", json.state.message)
 						end
-						return callback(false, nil)
+						return complete(false, nil)
 					end
 					if json.code == "canceled" then
 						log.debug("completion request cancelled at the server", json.message)
-						return callback(false, nil)
+						return complete(false, nil)
 					end
 				end
 
 				notify.error("completion request failed", err)
-				callback(false, nil)
+				complete(false, nil)
 				return
 			end
 
@@ -290,21 +322,11 @@ function Server:new()
 			end
 
 			log.trace("completion: ", json)
-			callback(true, json)
+			complete(true, json)
 		end)
 
 		return function()
-			if request_id ~= metadata.request_id then
-				return
-			end
-
-			request("CancelRequest", {
-				request_id = request_id,
-			}, function(_, err)
-				if err then
-					log.warn("failed to cancel in-flight request", err)
-				end
-			end)
+			this_pending_request()
 		end
 	end
 
