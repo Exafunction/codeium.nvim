@@ -4,8 +4,12 @@ local Path = require("plenary.path")
 local Job = require("plenary.job")
 local curl = require("plenary.curl")
 local config = require("codeium.config")
-local util = require("codeium.util")
 local default_mod = 438 -- 666
+
+local has_http, http = pcall(require, "http")
+if has_http then
+	has_http = http.supported()
+end
 
 local M = {}
 
@@ -381,30 +385,56 @@ end
 function M.post(url, params)
 	if type(params.body) == "table" then
 		params.headers = params.headers or {}
-		params.headers.content_type = params.headers["content_type"] or "application/json"
+		params.headers["content-type"] = params.headers["content-type"] or "application/json"
 		params.body = vim.fn.json_encode(params.body)
 	end
 
 	local cb = vim.schedule_wrap(params.callback)
-	params.callback = function(out, _)
-		if out.exit ~= 0 then
-			cb(nil, {
-				code = out.exit,
-				err = "curl failed",
-			})
-		elseif out.status > 299 then
-			cb(out.body, {
-				code = 0,
-				status = out.status,
-				response = out,
-				out = out.body,
-			})
-		else
-			cb(out.body, nil)
-		end
-	end
 
-	curl.post(url, params)
+	if has_http then
+		params[1] = http.methods.POST
+		params[2] = url
+		params[3] = params.body
+		params.body = nil
+		params.callback = function(err, resp)
+			if err then
+				cb(nil, {
+					code = 1,
+					err = err,
+				})
+			elseif resp.code > 299 then
+				cb(resp.body, {
+					code = 0,
+					status = resp.code,
+					response = resp,
+					out = resp.body,
+				})
+			else
+				cb(resp.body, nil)
+			end
+		end
+		http.string_request(params)
+	else
+		params.callback = function(out, _)
+			if out.exit ~= 0 then
+				cb(nil, {
+					code = out.exit,
+					err = "curl failed",
+				})
+			elseif out.status > 299 then
+				cb(out.body, {
+					code = 0,
+					status = out.status,
+					response = out,
+					out = out.body,
+				})
+			else
+				cb(out.body, nil)
+			end
+		end
+
+		curl.post(url, params)
+	end
 end
 
 function M.shell_open(...)

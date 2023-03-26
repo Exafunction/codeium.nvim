@@ -4,7 +4,6 @@ local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
-local util = require("codeium.util")
 local api_key = nil
 
 local function find_port(manager_dir, start_time)
