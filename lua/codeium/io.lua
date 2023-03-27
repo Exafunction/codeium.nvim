@@ -369,9 +369,11 @@ end
 
 function M.download(url, path, callback)
 	if has_http then
-		http.download_request({
+		http.request({
 			http.methods.GET,
 			url,
+			nil,
+			path,
 			callback = vim.schedule_wrap(function(err, resp)
 				if err then
 					callback(nil, "failed to download file " .. err)
@@ -381,7 +383,7 @@ function M.download(url, path, callback)
 					callback(resp, nil)
 				end
 			end),
-		}, path)
+		})
 	else
 		curl.get(url, {
 			output = path,
@@ -429,7 +431,7 @@ function M.post(url, params)
 				cb(resp.body, nil)
 			end
 		end
-		http.string_request(params)
+		http.request(params)
 	else
 		params.callback = function(out, _)
 			if out.exit ~= 0 then
