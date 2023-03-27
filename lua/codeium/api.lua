@@ -247,13 +247,11 @@ function Server:new()
 		end)
 	end
 
-	local function noop() end
+	local function noop(...) end
 
-	local pending_request = noop
+	local pending_request = { 0, noop }
 	function m.request_completion(document, editor_options, callback)
-		if pending_request then
-			pending_request()
-		end
+		pending_request[2](true)
 
 		local metadata = get_request_metadata()
 		local this_pending_request
@@ -261,13 +259,13 @@ function Server:new()
 		local complete
 		complete = function(...)
 			complete = noop
-			this_pending_request()
+			this_pending_request(false)
 			callback(...)
 		end
 
-		this_pending_request = function()
-			if pending_request == this_pending_request then
-				pending_request = noop
+		this_pending_request = function(is_complete)
+			if pending_request[1] == metadata.request_id then
+				pending_request = { 0, noop }
 			end
 			this_pending_request = noop
 
@@ -279,17 +277,18 @@ function Server:new()
 					log.warn("failed to cancel in-flight request", err)
 				end
 			end)
-			complete(false, nil)
+
+			if is_complete then
+				complete(false, nil)
+			end
 		end
-		pending_request = this_pending_request
+		pending_request = { metadata.request_id, this_pending_request }
 
 		request("GetCompletions", {
 			metadata = metadata,
 			editor_options = editor_options,
 			document = document,
 		}, function(body, err)
-			this_pending_request()
-
 			if err then
 				if err.status == 503 or err.status == 408 then
 					-- Service Unavailable or Timeout error
@@ -326,7 +325,7 @@ function Server:new()
 		end)
 
 		return function()
-			this_pending_request()
+			this_pending_request(true)
 		end
 	end
 
