@@ -270,7 +270,7 @@ function Server:new()
 			this_pending_request = noop
 
 			request("CancelRequest", {
-				metadata = get_request_metadata(metadata.request_id),
+				metadata = get_request_metadata(),
 				request_id = metadata.request_id,
 			}, function(_, err)
 				if err then
