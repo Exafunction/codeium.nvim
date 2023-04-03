@@ -1,0 +1,10 @@
+{
+  "version": "1.1.67",
+  "stamp": "8c58ba46e4b63f2ecd3a92a0cfaadf49cf196716",
+  "hashes": {
+    "aarch64-linux": "",
+    "aarch64-darwin": "",
+    "x86_64-linux": "sha256-VhR7Yy0G5IGnd7WESEfEhroCiWs+LfeeVTZ4lA9ZO0g=",
+    "x86_64-darwin": ""
+  }
+}

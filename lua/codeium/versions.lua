@@ -11,11 +11,24 @@ if not full_match then
 	end
 end
 
-local extension_version = "1.1.67"
-local extension_stamp = "8c58ba46e4b63f2ecd3a92a0cfaadf49cf196716"
+local function readfile(path)
+	if vim.fn.readfile then
+		return vim.fn.readfile(path)
+	else
+		return vim.api.nvim_eval('readfile("' .. path .. '")')
+	end
+end
+
+local path = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\\\])")
+local version_info = readfile(path .. "/versions.json")
+local version_parsed = vim.fn.json_decode(version_info)
+
+if not version_parsed then
+	error("unable to read version file from " .. path)
+end
 
 return {
 	nvim = full_match,
-	extension = extension_version,
-	extension_stamp = extension_stamp,
+	extension = version_parsed.version,
+	extension_stamp = version_parsed.stamp,
 }
