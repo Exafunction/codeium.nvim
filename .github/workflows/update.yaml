@@ -50,9 +50,9 @@ jobs:
           }' <<< "{}" | tee lua/codeium/versions.json | jq -C
 
           if git diff --exit-code lua/codeium/versions.json; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
             echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Commit and push
