@@ -8,6 +8,7 @@ on:
 
 jobs:
   update-versions:
+    name: Update versions.json
     runs-on: ubuntu-latest
     steps:
       - uses: nixbuild/nix-quick-install-action@v22
