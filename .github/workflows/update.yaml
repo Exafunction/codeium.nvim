@@ -49,7 +49,7 @@ jobs:
             }
           }' <<< "{}" | tee lua/codeium/versions.json | jq -C
 
-          if git diff --exit-code lua/codeium/versions.json; then
+          if git diff --exit-code lua/codeium/versions.json > /dev/null; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
