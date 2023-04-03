@@ -1,10 +1,16 @@
 name: Update Version
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # Every day at 2AM
 
 jobs:
   update-versions:
+    name: Update versions.json
     runs-on: ubuntu-latest
     steps:
       - uses: nixbuild/nix-quick-install-action@v22
@@ -17,21 +23,22 @@ jobs:
           repo: codeium
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3
       - name: Update files
         id: update
         run: |
           VERSION=${{ fromJSON(steps.get_latest_release.outputs.data).tag_name }}
           VERSION=${VERSION#language-server-v}
 
-          curl "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64" \
+          curl -L "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64" \
               -o ./language_server
           chmod +x ./language_server
           STAMP=$(./language_server -stamp | sed -nr 's/STABLE_BUILD_SCM_REVISION: ([0-9a-fA-F]*)/\1/p')
 
-          LINUX_X64=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64")
-          LINUX_ARM=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_arm")
-          MACOS_X64=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_x64")
-          MACOS_ARM=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_arm")
+          LINUX_X64=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64")
+          LINUX_ARM=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_arm")
+          MACOS_X64=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_x64")
+          MACOS_ARM=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_arm")
 
           jq \
             --arg "VERSION" "$VERSION" --arg "STAMP" "$STAMP" \
@@ -46,5 +53,19 @@ jobs:
               "x86_64-darwin": $MACOS_X64,
               "aarch64-darwin": $MACOS_ARM 
             }
-          }' <<< "{}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUTS"
+          }' <<< "{}" | tee lua/codeium/versions.json | jq -C
+
+          if git diff --exit-code lua/codeium/versions.json > /dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          git add lua/codeium/versions.json
+          git config --global user.name "codeium.nvim [bot]"
+          git config --global user.email "codeium-nvim-bot@example.com"
+          git commit -m "Update Codeium LSP to ${{ steps.update.outputs.version }}"
+          git push
