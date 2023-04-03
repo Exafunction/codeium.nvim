@@ -46,5 +46,5 @@ jobs:
               "x86_64-darwin": $MACOS_X64,
               "aarch64-darwin": $MACOS_ARM 
             }
-          }'
+          }' <<< "{}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUTS"
