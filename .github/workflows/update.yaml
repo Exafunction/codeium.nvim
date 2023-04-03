@@ -27,6 +27,7 @@ jobs:
               -o ./language_server
           chmod +x ./language_server
           STAMP=$(./language_server -stamp | sed -nr 's/STABLE_BUILD_SCM_REVISION: ([0-9a-fA-F]*)/\1/p')
+          ./language_server -stamp
 
           LINUX_X64=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64")
           LINUX_ARM=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_arm")
@@ -47,4 +48,4 @@ jobs:
               "aarch64-darwin": $MACOS_ARM 
             }
           }' <<< "{}"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUTS"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
