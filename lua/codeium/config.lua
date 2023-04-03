@@ -17,14 +17,22 @@ function M.defaults()
 	}
 end
 
+function M.installation_defaults()
+	local has_installed, installed_config = pcall(require, "codeium.installation_defaults")
+	if has_installed then
+		return installed_config
+	else
+		return {}
+	end
+end
+
 M.options = {
 	api = {},
 }
 
 function M.setup(options)
 	options = options or {}
-
-	M.options = vim.tbl_deep_extend("force", {}, M.defaults(), options)
+	M.options = vim.tbl_deep_extend("force", {}, M.defaults(), M.installation_defaults(), options)
 end
 
 return M
