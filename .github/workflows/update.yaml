@@ -20,6 +20,9 @@ jobs:
       - name: Update files
         id: update
         run: |
+          cat << EOF | jq -C
+            ${{steps.get_latest_release.outputs.data}}
+          EOF
           VERSION=${{ fromJSON(steps.get_latest_release.outputs.data).tag_name }}
           VERSION=${VERSION#language-server-v}
 
@@ -30,10 +33,10 @@ jobs:
           ./language_server -stamp
           cat ./language_server | wc -c
 
-          LINUX_X64=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64")
-          LINUX_ARM=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_arm")
-          MACOS_X64=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_x64")
-          MACOS_ARM=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_arm")
+          LINUX_X64=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64")
+          LINUX_ARM=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_arm")
+          MACOS_X64=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_x64")
+          MACOS_ARM=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_arm")
 
           jq \
             --arg "VERSION" "$VERSION" --arg "STAMP" "$STAMP" \
