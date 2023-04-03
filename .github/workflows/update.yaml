@@ -20,9 +20,6 @@ jobs:
       - name: Update files
         id: update
         run: |
-          cat << EOF | jq -C
-            ${{steps.get_latest_release.outputs.data}}
-          EOF
           VERSION=${{ fromJSON(steps.get_latest_release.outputs.data).tag_name }}
           VERSION=${VERSION#language-server-v}
 
@@ -30,8 +27,6 @@ jobs:
               -o ./language_server
           chmod +x ./language_server
           STAMP=$(./language_server -stamp | sed -nr 's/STABLE_BUILD_SCM_REVISION: ([0-9a-fA-F]*)/\1/p')
-          ./language_server -stamp
-          cat ./language_server | wc -c
 
           LINUX_X64=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64")
           LINUX_ARM=sha256-$(nix-prefetch-url --type sha256 "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_arm")
@@ -51,5 +46,19 @@ jobs:
               "x86_64-darwin": $MACOS_X64,
               "aarch64-darwin": $MACOS_ARM 
             }
-          }' <<< "{}"
+          }' <<< "{}" | tee lua/codeium/versions.json | jq -C
+
+          if git diff --exit-code lua/codeium/versions.json; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          git add lua/codeium/versions.json
+          git config --global user.name "codeium.nvim [bot]"
+          git config --global user.email "codeium-nvim-bot@example.com"
+          git commit -m "Update Codeium LSP to ${{ steps.update.outputs.version }}"
+          git push
