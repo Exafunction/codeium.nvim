@@ -76,7 +76,11 @@
         };
 
         overlays.default = self: super: {
-          vimPlugins.codeium-nvim = packages.vimPlugins.codeium-nvim;
+          vimPlugins =
+            super.vimPlugins
+            // {
+              codeium-nvim = packages.vimPlugins.codeium-nvim;
+            };
         };
 
         apps.default = {
