@@ -7,6 +7,7 @@ jobs:
   update-versions:
     runs-on: ubuntu-latest
     steps:
+      - uses: nixbuild/nix-quick-install-action@v22
       - name: Get Latest Release
         uses: octokit/request-action@v2.x
         id: get_latest_release
@@ -16,4 +17,34 @@ jobs:
           repo: codeium
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: "echo latest release: '${{ fromJSON(steps.get_latest_release.outputs.data).tag_name }}'"
+      - name: Update files
+        id: update
+        run: |
+          VERSION=${{ fromJSON(steps.get_latest_release.outputs.data).tag_name }}
+          VERSION=${VERSION#language-server-v}
+
+          curl "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64" \
+              -o ./language_server
+          chmod +x ./language_server
+          STAMP=$(./language_server -stamp | sed -nr 's/STABLE_BUILD_SCM_REVISION: ([0-9a-fA-F]*)/\1/p')
+
+          LINUX_X64=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_x64")
+          LINUX_ARM=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_linux_arm")
+          MACOS_X64=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_x64")
+          MACOS_ARM=$(nix-prefetch-url "https://github.com/Exafunction/codeium/releases/download/language-server-v$VERSION/language_server_macos_arm")
+
+          jq \
+            --arg "VERSION" "$VERSION" --arg "STAMP" "$STAMP" \
+            --arg "LINUX_X64" "$LINUX_X64" --arg "LINUX_ARM" "$LINUX_ARM" \
+            --arg "MACOS_X64" "$MACOS_X64" --arg "MACOS_ARM" "$MACOS_ARM" \
+          '{
+            "version": $VERSION,
+            "stamp": $STAMP,
+            "hashes": {
+              "x86_64-linux": $LINUX_X64,
+              "aarch64-linux": $LINUX_ARM,
+              "x86_64-darwin": $MACOS_X64,
+              "aarch64-darwin": $MACOS_ARM 
+            }
+          }'
+          echo "version=$VERSION" >> "$GITHUB_OUTPUTS"
