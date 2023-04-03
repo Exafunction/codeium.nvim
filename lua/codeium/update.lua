@@ -10,6 +10,13 @@ function M.get_bin_info()
 		return cached
 	end
 
+	if config.options.tools.language_server then
+		cached = {
+			bin = config.options.tools.language_server,
+		}
+		return cached
+	end
+
 	local os_info = io.get_system_info()
 	local dir = config.options.bin_path .. "/" .. versions.extension
 	local bin_sufix
