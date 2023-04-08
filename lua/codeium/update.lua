@@ -77,7 +77,7 @@ function M.validate(callback)
 			end
 
 			notify.warn(
-				"the version of the Codeium server could not be determined, make sure it matches " .. versions.extension
+				"Codeium.nvim: the version of the Codeium server could not be determined, make sure it matches " .. versions.extension
 			)
 			callback(nil)
 		end,
@@ -97,7 +97,7 @@ function M.download(callback)
 
 	local function hint(err)
 		notify.info(
-			"you can manually install the server",
+			"Codeium.nvim: you can manually install the server",
 			"download and extract '",
 			info.download_url,
 			"' to '",
@@ -110,10 +110,10 @@ function M.download(callback)
 	local function chmod()
 		io.set_executable(info.bin, function(_, err)
 			if err then
-				notify.error("failed to chmod server", err)
+				notify.error("Codeium.nvim: failed to chmod server", err)
 				hint("chmod_failed")
 			else
-				notify.info("server updated")
+				notify.info("Codeium.nvim: server updated")
 				M.validate(callback)
 			end
 		end)
@@ -123,10 +123,10 @@ function M.download(callback)
 		notify.info("unpacking server")
 		io.gunzip(gz, function(_, err)
 			if err then
-				notify.error("failed to unpack server")
+				notify.error("Codeium.nvim: failed to unpack server")
 				hint("unpack_failed")
 			else
-				notify.info("server unpacked")
+				notify.info("Codeium.nvim: server unpacked")
 				chmod()
 			end
 		end)
@@ -136,10 +136,10 @@ function M.download(callback)
 		notify.info("downloading server")
 		io.download(info.download_url, gz, function(_, err)
 			if err then
-				notify.error("failed to download server", err)
+				notify.error("Codeium.nvim: failed to download server", err)
 				hint("download_failed")
 			else
-				notify.info("server downloaded")
+				notify.info("Codeium.nvim: server downloaded")
 				unpack()
 			end
 		end)
