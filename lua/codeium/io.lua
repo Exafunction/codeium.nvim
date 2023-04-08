@@ -224,7 +224,7 @@ function M.get_system_info()
 
 	local arch = uname.machine
 
-	if os == "Darwin" and arch == "arm64" then
+	if os == "macos" and arch == "arm64" then
 		arch = "aarch64"
 	end
 
