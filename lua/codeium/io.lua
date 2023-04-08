@@ -384,6 +384,7 @@ function M.download(url, path, callback)
 	else
 		curl.get(url, {
 			output = path,
+			compressed = false,
 			callback = vim.schedule_wrap(function(out)
 				if out.exit ~= 0 then
 					callback(out, "curl exited with status code " .. out)
