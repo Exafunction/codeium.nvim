@@ -52,7 +52,7 @@ function M.validate(callback)
 
 	io.job({
 		info.bin,
-		"-stamp",
+		"--stamp",
 		on_exit = function(self, _)
 			local result = self:result()
 
@@ -77,7 +77,8 @@ function M.validate(callback)
 			end
 
 			notify.warn(
-				"Codeium.nvim: the version of the Codeium server could not be determined, make sure it matches " .. versions.extension
+				"Codeium.nvim: the version of the Codeium server could not be determined, make sure it matches "
+					.. versions.extension
 			)
 			callback(nil)
 		end,
