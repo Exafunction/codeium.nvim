@@ -23,7 +23,14 @@ local function codeium_to_cmp(comp, offset, right)
 
 	return {
 		type = 1,
-		documentation = label,
+		documentation = {
+			kind = 'markdown',
+			value = table.concat({
+				'```' .. vim.api.nvim_buf_get_option(0, 'filetype'),
+				label,
+				'```'
+			}, '\n'),
+		},
 		label = label,
 		insertText = label,
 		cmp = {
