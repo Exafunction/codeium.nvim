@@ -206,12 +206,11 @@ function Server:new()
 			log.debug(j.pid .. ": " .. v)
 		end
 
+		local api_server_url = 'https://' .. config.options.api.host .. ':' .. config.options.api.port
 		job = io.job({
 			update.get_bin_info().bin,
-			"--api_server_host",
-			config.options.api.host,
-			"--api_server_port",
-			config.options.api.port,
+			"--api_server_url",
+			api_server_url,
 			"--manager_dir",
 			manager_dir,
 			enable_handlers = true,
