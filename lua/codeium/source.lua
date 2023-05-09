@@ -35,6 +35,7 @@ local function codeium_to_cmp(comp, offset, right)
 		insertText = label,
 		cmp = {
 			kind_text = "Codeium",
+			kind_hl_group = "CmpItemKindCodeium",
 		},
 	}
 end
