@@ -21,6 +21,17 @@ local function codeium_to_cmp(comp, offset, right)
 		label = string.sub(label, 1, -#right - 1)
 	end
 
+	local range = {
+		start = {
+			line = comp.range.startPosition.row + 1,
+			character = offset - 1,
+		},
+		["end"] = {
+			line = comp.range.endPosition.row + 1,
+			character = comp.range.endPosition.col,
+		},
+	}
+
 	return {
 		type = 1,
 		documentation = {
@@ -33,6 +44,11 @@ local function codeium_to_cmp(comp, offset, right)
 		},
 		label = label,
 		insertText = label,
+		textEdit = {
+			newText = label,
+			insert = range,
+			replace = range,
+		},
 		cmp = {
 			kind_text = "Codeium",
 			kind_hl_group = "CmpItemKindCodeium",
