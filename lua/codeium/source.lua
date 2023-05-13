@@ -21,14 +21,29 @@ local function codeium_to_cmp(comp, offset, right)
 		label = string.sub(label, 1, -#right - 1)
 	end
 
+  -- We get the completion part that has the largest offset
+	local max_offset = offset
+	for _, v in pairs(comp.completionParts) do
+		local part_offset = tonumber(v.offset)
+		if part_offset > max_offset then
+			max_offset = part_offset
+		end
+	end
+
+  -- We get where the suffix difference between the completion and the range of code
+	local suffix_diff = comp.range.endOffset - max_offset
+
 	local range = {
 		start = {
-			line = comp.range.startPosition.row + 1,
+      -- Codeium returns an empy row for the first line
+			line = (comp.range.startPosition.row or 0) + 1,
 			character = offset - 1,
 		},
 		["end"] = {
-			line = comp.range.endPosition.row + 1,
-			character = comp.range.endPosition.col,
+      -- Codeium returns an empy row for the first line
+			line = (comp.range.endPosition.row or 0) + 1,
+      -- We only want to replace up to where the completion ends
+			character = comp.range.endPosition.col - suffix_diff,
 		},
 	}
 
