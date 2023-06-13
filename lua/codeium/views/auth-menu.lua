@@ -2,8 +2,9 @@ local io = require("codeium.io")
 local notify = require("codeium.notify")
 
 local function get_key(callback)
-	vim.ui.inputsecret({
+	vim.ui.input({
 		prompt = "Token ",
+		secret = true,
 		on_submit = callback,
 	}, function(result)
 		if result then
