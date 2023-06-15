@@ -456,12 +456,13 @@ end
 function M.shell_open(...)
 	local info = M.get_system_info()
 	if info.os == "linux" then
-		return M.get_command_output("xdg-open", ...)
+		return M.get_command_output("xdg-open",...)
 	elseif info.os == "macos" then
 		return M.get_command_output("/usr/bin/open", ...)
 	else
-		return M.get_command_output("start", ...)
+    return M.get_command_output("cmd", "/C start ".. string.gsub(..., "&","^&") )
 	end
 end
+
 
 return M
