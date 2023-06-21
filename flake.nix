@@ -41,7 +41,7 @@
             phases = ["installPhase" "fixupPhase"];
             nativeBuildInputs = [
               stdenv.cc.cc
-            ] ++ (if !stdenv.isDarwin then [ authoPatchelfHook ] else []);
+            ] ++ (if !stdenv.isDarwin then [ autoPatchelfHook ] else []);
 
             installPhase = ''
               mkdir -p $out/bin
