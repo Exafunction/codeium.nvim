@@ -1,8 +1,6 @@
 local enums = require("codeium.enums")
 local util = require("codeium.util")
 
-local cancel_previous_request = nil
-
 local function utf8len(str)
 	if str == "" or not str then
 		return 0
@@ -21,28 +19,30 @@ local function codeium_to_cmp(comp, offset, right)
 		label = string.sub(label, 1, -#right - 1)
 	end
 
-  -- We get the completion part that has the largest offset
+	-- We get the completion part that has the largest offset
 	local max_offset = offset
-	for _, v in pairs(comp.completionParts) do
-		local part_offset = tonumber(v.offset)
-		if part_offset > max_offset then
-			max_offset = part_offset
+	if comp.completionParts then
+		for _, v in pairs(comp.completionParts) do
+			local part_offset = tonumber(v.offset)
+			if part_offset > max_offset then
+				max_offset = part_offset
+			end
 		end
 	end
 
-  -- We get where the suffix difference between the completion and the range of code
+	-- We get where the suffix difference between the completion and the range of code
 	local suffix_diff = comp.range.endOffset - max_offset
 
 	local range = {
 		start = {
-      -- Codeium returns an empy row for the first line
+			-- Codeium returns an empy row for the first line
 			line = (comp.range.startPosition.row or 0) + 1,
 			character = offset - 1,
 		},
 		["end"] = {
-      -- Codeium returns an empy row for the first line
+			-- Codeium returns an empy row for the first line
 			line = (comp.range.endPosition.row or 0) + 1,
-      -- We only want to replace up to where the completion ends
+			-- We only want to replace up to where the completion ends
 			character = comp.range.endPosition.col - suffix_diff,
 		},
 	}
@@ -50,12 +50,12 @@ local function codeium_to_cmp(comp, offset, right)
 	return {
 		type = 1,
 		documentation = {
-			kind = 'markdown',
+			kind = "markdown",
 			value = table.concat({
-				'```' .. vim.api.nvim_buf_get_option(0, 'filetype'),
+				"```" .. vim.api.nvim_buf_get_option(0, "filetype"),
 				label,
-				'```'
-			}, '\n'),
+				"```",
+			}, "\n"),
 		},
 		label = label,
 		insertText = label,
