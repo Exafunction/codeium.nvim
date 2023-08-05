@@ -5,10 +5,8 @@ local function utf8len(str)
 	if str == "" or not str then
 		return 0
 	end
-	-- TODO: Figure out how to convert the document encoding to UTF8 length
-	-- Bonus points for doing it with raw codepoints instead of converting the
-	-- string wholesale
-	return string.len(str)
+
+	return #vim.str_utf_pos(str)
 end
 
 local function codeium_to_cmp(comp, offset, right)
