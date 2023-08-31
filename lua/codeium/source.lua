@@ -36,12 +36,12 @@ local function codeium_to_cmp(comp, offset, right)
 	local range = {
 		start = {
 			-- Codeium returns an empy row for the first line
-			line = (comp.range.startPosition.row or 0) + 1,
-			character = offset - 1,
+			line = (tonumber(comp.range.startPosition.row) or 0),
+			character = offset,
 		},
 		["end"] = {
 			-- Codeium returns an empy row for the first line
-			line = (comp.range.endPosition.row or 0) + 1,
+			line = (tonumber(comp.range.endPosition.row) or 0),
 			-- We only want to replace up to where the completion ends
 			character = comp.range.endPosition.col - suffix_diff,
 		},
