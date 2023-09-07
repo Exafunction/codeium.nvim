@@ -37,7 +37,7 @@ local function codeium_to_cmp(comp, offset, right)
 		start = {
 			-- Codeium returns an empy row for the first line
 			line = (tonumber(comp.range.startPosition.row) or 0),
-			character = offset,
+			character = offset - 1,
 		},
 		["end"] = {
 			-- Codeium returns an empy row for the first line
