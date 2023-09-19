@@ -16,7 +16,7 @@ Feel free to create an issue/PR if you want to see anything else implemented.
 
 ```lua
 use {
-    "jcdickinson/codeium.nvim",
+    "Exafunction/codeium.nvim",
     requires = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
@@ -37,7 +37,7 @@ use {
 }
 
 use {
-    "jcdickinson/codeium.nvim",
+    "Exafunction/codeium.nvim",
     requires = {
         "jcdickinson/http.nvim",
         "nvim-lua/plenary.nvim",
@@ -54,7 +54,7 @@ use {
 
 ```lua
 {
-    "jcdickinson/codeium.nvim",
+    "Exafunction/codeium.nvim",
     dependencies = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
@@ -75,7 +75,7 @@ use {
         build = "cargo build --workspace --release"
     },
     {
-        "jcdickinson/codeium.nvim",
+        "Exafunction/codeium.nvim",
         dependencies = {
             "jcdickinson/http.nvim",
             "nvim-lua/plenary.nvim",
