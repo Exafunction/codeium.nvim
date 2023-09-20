@@ -51,7 +51,7 @@ jobs:
               "x86_64-linux": $LINUX_X64,
               "aarch64-linux": $LINUX_ARM,
               "x86_64-darwin": $MACOS_X64,
-              "aarch64-darwin": $MACOS_ARM 
+              "aarch64-darwin": $MACOS_ARM
             }
           }' <<< "{}" | tee lua/codeium/versions.json | jq -C
 
