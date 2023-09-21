@@ -1,0 +1,15 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nixbuild/nix-quick-install-action@v22
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - run: nix --experimental-features 'nix-command flakes' build .#nvimWithCodeium
