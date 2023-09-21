@@ -15,8 +15,8 @@ local function codeium_to_cmp(comp, offset, right)
 	local documentation = comp.completion.text
 
 	local label = string.sub(documentation, offset)
-	if string.sub(label, -#right) == right then
-		label = string.sub(label, 1, -#right - 1)
+	if string.sub(label, - #right) == right then
+		label = string.sub(label, 1, - #right - 1)
 	end
 
 	-- We get the completion part that has the largest offset
