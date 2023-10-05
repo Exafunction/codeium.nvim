@@ -44,28 +44,6 @@ use {
 }
 ```
 
-#### Optional [http.nvim](https://github.com/jcdickinson/http.nvim) support
-
-```lua
-use {
-    "jcdickinson/http.nvim",
-    run = "cargo build --workspace --release"
-}
-
-use {
-    "Exafunction/codeium.nvim",
-    requires = {
-        "jcdickinson/http.nvim",
-        "nvim-lua/plenary.nvim",
-        "hrsh7th/nvim-cmp",
-    },
-    config = function()
-        require("codeium").setup({
-        })
-    end
-}
-```
-
 ### [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
@@ -80,29 +58,6 @@ use {
         })
     end
 },
-```
-
-#### Optional [http.nvim](https://github.com/jcdickinson/http.nvim) support
-
-```lua
-{
-    {
-        "jcdickinson/http.nvim",
-        build = "cargo build --workspace --release"
-    },
-    {
-        "Exafunction/codeium.nvim",
-        dependencies = {
-            "jcdickinson/http.nvim",
-            "nvim-lua/plenary.nvim",
-            "hrsh7th/nvim-cmp",
-        },
-        config = function()
-            require("codeium").setup({
-            })
-        end
-    }
-}
 ```
 
 ## Usage

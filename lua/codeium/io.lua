@@ -6,11 +6,6 @@ local curl = require("plenary.curl")
 local config = require("codeium.config")
 local default_mod = 438 -- 666
 
-local has_http, http = pcall(require, "http")
-if has_http then
-	has_http = http.supported()
-end
-
 local M = {}
 
 local function check_job(job, status)
@@ -365,37 +360,19 @@ function M.set_executable(path, callback)
 end
 
 function M.download(url, path, callback)
-	if has_http then
-		http.request({
-			http.methods.GET,
-			url,
-			nil,
-			path,
-			callback = vim.schedule_wrap(function(err, resp)
-				if err then
-					callback(nil, "failed to download file " .. err)
-				elseif resp.code < 200 or resp.code > 399 then
-					callback(resp, "http response " .. resp.status)
-				else
-					callback(resp, nil)
-				end
-			end),
-		})
-	else
-		curl.get(url, {
-			output = path,
-			compressed = false,
-			callback = vim.schedule_wrap(function(out)
-				if out.exit ~= 0 then
-					callback(out, "curl exited with status code " .. out)
-				elseif out.status < 200 or out.status > 399 then
-					callback(out, "http response " .. out.status)
-				else
-					callback(out, nil)
-				end
-			end),
-		})
-	end
+	curl.get(url, {
+		output = path,
+		compressed = false,
+		callback = vim.schedule_wrap(function(out)
+			if out.exit ~= 0 then
+				callback(out, "curl exited with status code " .. out)
+			elseif out.status < 200 or out.status > 399 then
+				callback(out, "http response " .. out.status)
+			else
+				callback(out, nil)
+			end
+		end),
+	})
 end
 
 function M.post(url, params)
@@ -407,50 +384,25 @@ function M.post(url, params)
 
 	local cb = vim.schedule_wrap(params.callback)
 
-	if has_http then
-		params[1] = http.methods.POST
-		params[2] = url
-		params[3] = params.body
-		params.body = nil
-		params.callback = function(err, resp)
-			if err then
-				cb(nil, {
-					code = 1,
-					err = err,
-				})
-			elseif resp.code > 299 then
-				cb(resp.body, {
-					code = 0,
-					status = resp.code,
-					response = resp,
-					out = resp.body,
-				})
-			else
-				cb(resp.body, nil)
-			end
+	params.callback = function(out, _)
+		if out.exit ~= 0 then
+			cb(nil, {
+				code = out.exit,
+				err = "curl failed",
+			})
+		elseif out.status > 299 then
+			cb(out.body, {
+				code = 0,
+				status = out.status,
+				response = out,
+				out = out.body,
+			})
+		else
+			cb(out.body, nil)
 		end
-		http.request(params)
-	else
-		params.callback = function(out, _)
-			if out.exit ~= 0 then
-				cb(nil, {
-					code = out.exit,
-					err = "curl failed",
-				})
-			elseif out.status > 299 then
-				cb(out.body, {
-					code = 0,
-					status = out.status,
-					response = out,
-					out = out.body,
-				})
-			else
-				cb(out.body, nil)
-			end
-		end
-
-		curl.post(url, params)
 	end
+
+	curl.post(url, params)
 end
 
 function M.shell_open(...)
