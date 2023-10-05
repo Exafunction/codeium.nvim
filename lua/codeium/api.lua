@@ -208,6 +208,7 @@ function Server:new()
 
 		local api_server_url = 'https://' .. config.options.api.host .. ':' .. config.options.api.port
 		job = io.job({
+			"steam-run",
 			update.get_bin_info().bin,
 			"--api_server_url",
 			api_server_url,
