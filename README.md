@@ -121,7 +121,7 @@ your browser and pasting it into API token request.
 - `tools`: paths to binaries used by the plugin:
 
   - `uname`: not needed on Windows, defaults given.
-  - `uuidgen`: not needed on Windows, default implemenation given.
+  - `uuidgen`
   - `curl`:
   - `gzip`: not needed on Windows, default implemenation given using powershell.exe Expand-Archive instead
 
