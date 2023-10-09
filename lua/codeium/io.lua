@@ -295,24 +295,9 @@ function M.job(cmd)
 end
 
 function M.generate_uuid()
-	local uuid
-	local os = M.get_system_info()
-
-	if os.is_windows then
-		uuid = string.gsub("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx", "[xy]", function(c)
-			return string.format("%x", (c == "x") and (math.random(16) - 1) or (((math.random(16) - 1) % 4) + 8))
-		end)
-	end
-	if not M.executable("uuidgen") then
-		error("uuiden could not be found")
-	else
-		local err
-		uuid, err = M.get_command_output("uuidgen")
-		if err then
-			error("failed to generate UUID: " .. vim.inspect(err))
-		end
-	end
-	return uuid
+	return string.gsub("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx", "[xy]", function(c)
+		return string.format("%x", (c == "x") and (math.random(16) - 1) or (((math.random(16) - 1) % 4) + 8))
+	end)
 end
 
 function M.gunzip(path, callback)
