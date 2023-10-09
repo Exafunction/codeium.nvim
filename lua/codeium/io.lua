@@ -364,6 +364,7 @@ function M.post(url, params)
 	if type(params.body) == "table" then
 		params.headers = params.headers or {}
 		params.headers["content-type"] = params.headers["content-type"] or "application/json"
+		params.compressed = false
 		params.body = vim.fn.json_encode(params.body)
 	end
 
