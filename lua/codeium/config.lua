@@ -5,6 +5,7 @@ function M.defaults()
 		manager_path = nil,
 		bin_path = vim.fn.stdpath("cache") .. "/codeium/bin",
 		config_path = vim.fn.stdpath("cache") .. "/codeium/config.json",
+		override_download_url = "https://github.com",
 		api = {
 			host = "server.codeium.com",
 			port = "443",
