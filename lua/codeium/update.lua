@@ -5,6 +5,7 @@ local notify = require("codeium.notify")
 local M = {}
 
 local cached = nil
+local override_download_url = "https://github.com"
 function M.get_bin_info()
 	if cached then
 		return cached
@@ -16,7 +17,11 @@ function M.get_bin_info()
 		}
 		return cached
 	end
-
+	
+    if config.options.override_download_url then
+		override_download_url = config.options.override_download_url
+	end
+	
 	local os_info = io.get_system_info()
 	local dir = config.options.bin_path .. "/" .. versions.extension
 	local bin_sufix
@@ -32,7 +37,8 @@ function M.get_bin_info()
 		dir = dir,
 		bin_sufix = bin_sufix,
 		bin = dir .. "/" .. "language_server_" .. bin_sufix,
-		download_url = "https://github.com/Exafunction/codeium/releases/download/language-server-v"
+		download_url = override_download_url
+		    .. "/Exafunction/codeium/releases/download/language-server-v"
 			.. versions.extension
 			.. "/language_server_"
 			.. bin_sufix
