@@ -295,52 +295,75 @@ function M.job(cmd)
 end
 
 function M.generate_uuid()
-	local uuid
-	local os = M.get_system_info()
-
-	if os.is_windows then
-		uuid = string.gsub("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx", "[xy]", function(c)
-			return string.format("%x", (c == "x") and (math.random(16) - 1) or (((math.random(16) - 1) % 4) + 8))
-		end)
-	end
-	if not M.executable("uuidgen") then
-		error("uuiden could not be found")
-	else
-		local err
-		uuid, err = M.get_command_output("uuidgen")
-		if err then
-			error("failed to generate UUID: " .. vim.inspect(err))
-		end
-	end
-	return uuid
+	return string.gsub("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx", "[xy]", function(c)
+		return string.format("%x", (c == "x") and (math.random(16) - 1) or (((math.random(16) - 1) % 4) + 8))
+	end)
 end
 
 function M.gunzip(path, callback)
-	local os = M.get_system_info()
+	if not M.executable("gzip") then
+		local function expandFile(infile)
+			local scriptDirectory = debug.getinfo(1, "S").source:match("^@(.*/)[^/]+$")
+			local command = "& { . "
+				.. vim.fn.shellescape(scriptDirectory .. "../powershell/gzip.ps1")
+				.. "; Expand-File "
+				.. vim.fn.shellescape(infile)
+				.. "}"
+			local output = vim.fn.system(command)
 
-	if os.is_windows then
+			if vim.v.shell_error ~= 0 then
+				error("Failed to expand file: " .. output)
+			end
+		end
+		local shell = vim.o.shell
+		local shellcmdflag = vim.o.shellcmdflag
+		local shellredir = vim.o.shellredir
+		local shellpipe = vim.o.shellpipe
+		local shellquote = vim.o.shellquote
+		local shellxquote = vim.o.shellxquote
+
+		local pwshCoreAvailable = vim.fn.executable("pwsh")
+
+		local isPowershell = vim.o.shell == "pwsh"
+			or vim.o.shell == "pwsh.exe"
+			or vim.o.shell == "powershell"
+			or vim.o.shell == "powershell.exe"
+		if not isPowershell then
+			if pwshCoreAvailable then
+				vim.o.shell = "pwsh"
+			else
+				vim.o.shell = "powershell"
+			end
+			vim.o.shellcmdflag =
+				"-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+			vim.o.shellredir = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
+			vim.o.shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
+			vim.o.shellquote = ""
+			vim.o.shellxquote = ""
+		end
+		isPowershell = vim.o.shell == "pwsh"
+			or vim.o.shell == "pwsh.exe"
+			or vim.o.shell == "powershell"
+			or vim.o.shell == "powershell.exe"
+		if isPowershell then
+			expandFile(path)
+			callback()
+		else
+			callback(nil, "gzip could not be found, powershell was unable to be run")
+		end
+		vim.o.shell = shell
+		vim.o.shellcmdflag = shellcmdflag
+		vim.o.shellredir = shellredir
+		vim.o.shellpipe = shellpipe
+		vim.o.shellquote = shellquote
+		vim.o.shellxquote = shellxquote
+	else
 		M.job({
-			"powershell.exe",
-			"-noprofile",
-			"-command",
-			"\"Expand-Archive -Path '",
+			"gzip",
+			"-d",
 			path,
-			"' -DestinationPath '",
-			".",
-			"'\"",
 			on_exit = callback,
 		}):start()
-	else
-		if not M.executable("gzip") then
-			callback(nil, "gzip could not be found")
-		else
-			M.job({
-				"gzip",
-				"-d",
-				path,
-				on_exit = callback,
-			}):start()
-		end
 	end
 end
 
@@ -379,6 +402,7 @@ function M.post(url, params)
 	if type(params.body) == "table" then
 		params.headers = params.headers or {}
 		params.headers["content-type"] = params.headers["content-type"] or "application/json"
+		params.compressed = false
 		params.body = vim.fn.json_encode(params.body)
 	end
 
