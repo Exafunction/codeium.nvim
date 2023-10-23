@@ -1,7 +1,4 @@
-local p_debug = vim.fn.getenv("DEBUG_CODEIUM")
-if p_debug == vim.NIL or type(p_debug) ~= "string" then
-	p_debug = "info"
-end
+local p_debug = vim.env.DEBUG_CODEIUM
 
 return require("plenary.log").new({
 	plugin = "codeium",

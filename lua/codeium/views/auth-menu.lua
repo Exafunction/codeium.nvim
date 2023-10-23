@@ -3,16 +3,14 @@ local notify = require("codeium.notify")
 
 local function get_key(callback)
 	local result = vim.fn.inputsecret("Token ")
-	if result then
-		callback(result)
-	end
+	callback(result)
 end
 
 local function open_buffer(url, callback)
 	local bufnr = vim.api.nvim_create_buf(false, true)
-	assert(bufnr, "failed to create buffer")
+	assert(bufnr ~= 0, "failed to create buffer")
 
-	vim.api.nvim_buf_set_option(bufnr, "bufhidden", "wipe")
+	vim.bo[bufnr].bufhidden = 'wipe'
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, true, {
 		url,
 		"",
@@ -20,14 +18,8 @@ local function open_buffer(url, callback)
 	})
 
 	local win_id, aucmd
-	local closed = false
 
 	local function close()
-		if closed then
-			return
-		end
-
-		closed = true
 		vim.api.nvim_del_autocmd(aucmd)
 		vim.api.nvim_win_close(win_id, true)
 	end
@@ -69,7 +61,6 @@ local function open_buffer(url, callback)
 	}
 
 	win_id = vim.api.nvim_open_win(bufnr, true, win_opts)
-	vim.api.nvim_win_set_option(win_id, "cursorline", false)
 end
 
 local function M(url, callback)

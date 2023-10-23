@@ -10,10 +10,7 @@ function M.defaults()
 			host = "server.codeium.com",
 			port = "443",
 		},
-		tools = {
-			uname = "uname",
-			genuuid = "genuuid",
-		},
+		tools = {},
 		wrapper = nil,
 	}
 end
@@ -27,9 +24,7 @@ function M.installation_defaults()
 	end
 end
 
-M.options = {
-	api = {},
-}
+M.options = {}
 
 function M.setup(options)
 	options = options or {}
