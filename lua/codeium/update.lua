@@ -17,11 +17,11 @@ function M.get_bin_info()
 		}
 		return cached
 	end
-	
-    if config.options.language_server_download_url then
+
+	if config.options.language_server_download_url then
 		language_server_download_url = config.options.language_server_download_url
 	end
-	
+
 	local os_info = io.get_system_info()
 	local dir = config.options.bin_path .. "/" .. versions.extension
 	local bin_sufix
@@ -38,7 +38,7 @@ function M.get_bin_info()
 		bin_sufix = bin_sufix,
 		bin = dir .. "/" .. "language_server_" .. bin_sufix,
 		download_url = language_server_download_url
-		    .. "/Exafunction/codeium/releases/download/language-server-v"
+			.. "/Exafunction/codeium/releases/download/language-server-v"
 			.. versions.extension
 			.. "/language_server_"
 			.. bin_sufix
