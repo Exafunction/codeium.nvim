@@ -146,6 +146,7 @@ function Server:new()
 		io.post(url, {
 			body = payload,
 			callback = callback,
+			http_version = "HTTP/2",
 		})
 	end
 
