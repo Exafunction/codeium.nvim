@@ -48,7 +48,7 @@
               install -m755 $src $out/bin/codeium-lsp
             '';
           };
-          vimPlugins.codeium-nvim = vimUtils.buildVimPluginFrom2Nix {
+          vimPlugins.codeium-nvim = vimUtils.buildVimPlugin {
             pname = "codeium";
             version = "v${versions.version}-main";
             src = ./.;
