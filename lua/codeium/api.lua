@@ -36,7 +36,7 @@ local function get_request_metadata(request_id)
 		api_key = api_key,
 		ide_name = "neovim",
 		ide_version = versions.nvim,
-		extension_name = "vim",
+		extension_name = "neovim",
 		extension_version = versions.extension,
 		request_id = request_id or next_cookie(),
 	}
@@ -142,7 +142,7 @@ function Server:new()
 	local healthy = false
 
 	local function request(fn, payload, callback)
-		local url = "http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
+		local url = "http://127.0.0.1:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
 		io.post(url, {
 			body = payload,
 			callback = callback,
