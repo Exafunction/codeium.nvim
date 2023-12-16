@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = {
@@ -39,9 +39,15 @@
             sourceRoot = ".";
 
             phases = ["installPhase" "fixupPhase"];
-            nativeBuildInputs = [
-              stdenv.cc.cc
-            ] ++ (if !stdenv.isDarwin then [ autoPatchelfHook ] else []);
+            nativeBuildInputs =
+              [
+                stdenv.cc.cc
+              ]
+              ++ (
+                if !stdenv.isDarwin
+                then [autoPatchelfHook]
+                else []
+              );
 
             installPhase = ''
               mkdir -p $out/bin
