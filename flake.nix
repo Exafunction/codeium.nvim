@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = {
@@ -39,16 +39,22 @@
             sourceRoot = ".";
 
             phases = ["installPhase" "fixupPhase"];
-            nativeBuildInputs = [
-              stdenv.cc.cc
-            ] ++ (if !stdenv.isDarwin then [ autoPatchelfHook ] else []);
+            nativeBuildInputs =
+              [
+                stdenv.cc.cc
+              ]
+              ++ (
+                if !stdenv.isDarwin
+                then [autoPatchelfHook]
+                else []
+              );
 
             installPhase = ''
               mkdir -p $out/bin
               install -m755 $src $out/bin/codeium-lsp
             '';
           };
-          vimPlugins.codeium-nvim = vimUtils.buildVimPluginFrom2Nix {
+          vimPlugins.codeium-nvim = vimUtils.buildVimPlugin {
             pname = "codeium";
             version = "v${versions.version}-main";
             src = ./.;
