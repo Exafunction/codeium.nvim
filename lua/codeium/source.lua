@@ -68,6 +68,7 @@ local function codeium_to_cmp(comp, offset, right)
 			kind_text = "Codeium",
 			kind_hl_group = "CmpItemKindCodeium",
 		},
+		codeium_completion_id = comp.completion.completionId,
 	}
 end
 
@@ -91,6 +92,20 @@ end
 function Source:get_position_encoding_kind()
 	return "utf-8"
 end
+
+require("cmp").event:on("confirm_done", function(event)
+	if
+		event.entry
+		and event.entry.source
+		and event.entry.source.name == "codeium"
+		and event.entry.completion_item
+		and event.entry.completion_item.codeium_completion_id
+		and event.entry.source.source
+		and event.entry.source.source.server
+	then
+		event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
+	end
+end)
 
 function Source:complete(params, callback)
 	local context = params.context
