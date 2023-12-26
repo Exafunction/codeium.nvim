@@ -29,7 +29,7 @@ local function get_request_metadata(request_id)
 		api_key = api_key,
 		ide_name = "neovim",
 		ide_version = versions.nvim,
-		extension_name = "vim",
+		extension_name = "neovim",
 		extension_version = versions.extension,
 		request_id = request_id or next_cookie(),
 	}
@@ -133,7 +133,7 @@ function Server:new()
 	local healthy = false
 
 	local function request(fn, payload, callback)
-		local url = "http://localhost:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
+		local url = "http://127.0.0.1:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
 		io.post(url, {
 			body = payload,
 			callback = callback,
@@ -196,7 +196,7 @@ function Server:new()
 			log.debug(j.pid .. ": " .. v)
 		end
 
-		local api_server_url = 'https://' .. config.options.api.host .. ':' .. config.options.api.port
+		local api_server_url = "https://" .. config.options.api.host .. ":" .. config.options.api.port
 		job = io.job({
 			update.get_bin_info().bin,
 			"--api_server_url",
@@ -315,6 +315,13 @@ function Server:new()
 		return function()
 			this_pending_request(true)
 		end
+	end
+
+	function m.accept_completion(completion_id)
+		request("AcceptCompletion", {
+			metadata = get_request_metadata(),
+			completion_id = completion_id,
+		}, noop)
 	end
 
 	function m.shutdown()
