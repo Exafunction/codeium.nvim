@@ -15,8 +15,8 @@ local function codeium_to_cmp(comp, offset, right)
 	local documentation = comp.completion.text
 
 	local label = string.sub(documentation, offset)
-	if string.sub(label, - #right) == right then
-		label = string.sub(label, 1, - #right - 1)
+	if string.sub(label, -#right) == right then
+		label = string.sub(label, 1, -#right - 1)
 	end
 
 	-- We get the completion part that has the largest offset
@@ -68,6 +68,7 @@ local function codeium_to_cmp(comp, offset, right)
 			kind_text = "Codeium",
 			kind_hl_group = "CmpItemKindCodeium",
 		},
+		codeium_completion_id = comp.completion.completionId,
 	}
 end
 
@@ -91,6 +92,20 @@ end
 function Source:get_position_encoding_kind()
 	return "utf-8"
 end
+
+require("cmp").event:on("confirm_done", function(event)
+	if
+		event.entry
+		and event.entry.source
+		and event.entry.source.name == "codeium"
+		and event.entry.completion_item
+		and event.entry.completion_item.codeium_completion_id
+		and event.entry.source.source
+		and event.entry.source.source.server
+	then
+		event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
+	end
+end)
 
 function Source:complete(params, callback)
 	local context = params.context
@@ -124,9 +139,6 @@ function Source:complete(params, callback)
 	table.insert(lines, "")
 	local text = table.concat(lines, line_ending)
 
-	local cancel
-	local remove_event = require("cmp").event:on("menu_closed", cancel)
-
 	local function handle_completions(completion_items)
 		local duplicates = {}
 		local completions = {}
@@ -139,7 +151,7 @@ function Source:complete(params, callback)
 		callback(completions)
 	end
 
-	cancel = self.server.request_completion(
+	self.server.request_completion(
 		{
 			editor_language = filetype,
 			language = language,
@@ -149,8 +161,6 @@ function Source:complete(params, callback)
 		},
 		editor_options,
 		function(success, json)
-			remove_event()
-
 			if not success then
 				callback(nil)
 			end
