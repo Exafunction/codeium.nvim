@@ -2,21 +2,22 @@ local enums = require("codeium.enums")
 local util = require("codeium.util")
 
 local function utf8len(str)
-	if str == "" or not str then
+	if not str then
 		return 0
 	end
 	-- TODO: Figure out how to convert the document encoding to UTF8 length
 	-- Bonus points for doing it with raw codepoints instead of converting the
 	-- string wholesale
-	return string.len(str)
+	return str:len()
 end
 
 local function codeium_to_cmp(comp, offset, right)
 	local documentation = comp.completion.text
 
-	local label = string.sub(documentation, offset)
-	if string.sub(label, -#right) == right then
-		label = string.sub(label, 1, -#right - 1)
+	local label = documentation:sub(offset)
+	if label:sub(- #right) == right then
+		label = label:sub(1, - #right - 1)
+
 	end
 
 	-- We get the completion part that has the largest offset

@@ -7,14 +7,7 @@ local notify = require("codeium.notify")
 local api_key = nil
 
 local function find_port(manager_dir, start_time)
-	local files, err = io.readdir(manager_dir)
-	if err then
-		log.warn("error finding port file: ", err)
-	end
-
-	if not files then
-		return nil
-	end
+	local files = io.readdir(manager_dir)
 
 	for _, file in ipairs(files) do
 		local number = tonumber(file.name, 10)
@@ -47,7 +40,7 @@ Server.__index = Server
 
 function Server.load_api_key()
 	local json, err = io.read_json(config.options.config_path)
-	if err then
+	if err or type(json) ~= "table" then
 		if err == "ENOENT" then
 			-- Allow any UI plugins to load
 			vim.defer_fn(function()
@@ -59,7 +52,7 @@ function Server.load_api_key()
 		api_key = nil
 		return
 	end
-	api_key = (json or {}).api_key
+	api_key = json.api_key
 end
 
 function Server.save_api_key()
@@ -115,18 +108,16 @@ function Server.authenticate()
 					return
 				end
 				notify.error("api key is incorrect")
-				prompt(true)
+				prompt()
 			end,
 		})
 	end
 
-	prompt = function(proceed)
-		if proceed then
-			require("codeium.views.auth-menu")(url, on_submit)
-		end
+	prompt = function()
+		require("codeium.views.auth-menu")(url, on_submit)
 	end
 
-	prompt(true)
+	prompt()
 end
 
 function Server:new()
@@ -168,8 +159,7 @@ function Server:new()
 	function m.start()
 		m.shutdown()
 
-		local cookie = next_cookie()
-		current_cookie = cookie
+		current_cookie = next_cookie()
 
 		if not api_key then
 			io.timer(1000, 0, m.start)
@@ -185,7 +175,7 @@ function Server:new()
 		local start_time = io.touch(manager_dir .. "/start")
 
 		local function on_exit(_, err)
-			if current_cookie ~= cookie then
+			if not current_cookie then
 				return
 			end
 
@@ -223,7 +213,7 @@ function Server:new()
 
 		local function start_heartbeat()
 			io.timer(100, 5000, function(cancel_heartbeat)
-				if current_cookie ~= cookie then
+				if not current_cookie then
 					cancel_heartbeat()
 				else
 					do_heartbeat()
@@ -232,7 +222,7 @@ function Server:new()
 		end
 
 		io.timer(100, 500, function(cancel)
-			if current_cookie ~= cookie then
+			if not current_cookie then
 				cancel()
 				return
 			end
@@ -340,10 +330,6 @@ function Server:new()
 			job.on_exit = nil
 			job:shutdown()
 		end
-	end
-
-	function m.__gc()
-		current_cookie = nil
 	end
 
 	m.__index = m

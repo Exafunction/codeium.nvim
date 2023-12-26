@@ -51,7 +51,7 @@ function M.validate(callback)
 	local info = M.get_bin_info()
 	local prefix = "STABLE_BUILD_SCM_REVISION: "
 
-	if not io.exists(info.bin) then
+	if not io.file_exists(info.bin) then
 		callback(info.bin .. " not found")
 		return
 	end
@@ -63,22 +63,21 @@ function M.validate(callback)
 			local result = self:result()
 
 			for _, v in ipairs(result) do
-				if string.sub(v, 1, #prefix) == prefix then
-					local stamp = string.sub(v, #prefix + 1)
+				if v:sub(1, #prefix) == prefix then
+					local stamp = v:sub(#prefix + 1)
 					if stamp == versions.extension_stamp then
 						callback(nil)
 						return
-					else
-						notify.error(
-							stamp
-							.. " does not match the expected Codeium server stamp of "
-							.. versions.extension_stamp
-							.. ". Please update to: https://github.com/Exafunction/codeium/releases/tag/language-server-v"
-							.. versions.extension
-						)
-						callback(nil)
-						return
 					end
+					notify.error(
+						stamp
+						.. " does not match the expected Codeium server stamp of "
+						.. versions.extension_stamp
+						.. ". Please update to: https://github.com/Exafunction/codeium/releases/tag/language-server-v"
+						.. versions.extension
+					)
+					callback(nil)
+					return
 				end
 			end
 
@@ -94,7 +93,7 @@ end
 function M.download(callback)
 	local info = M.get_bin_info()
 
-	if io.exists(info.bin) then
+	if io.file_exists(info.bin) then
 		M.validate(callback)
 		return
 	end
