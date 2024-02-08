@@ -73,10 +73,6 @@ your browser and pasting it into API token request.
 - `api`: information about the API server to use:
   - `host`: the hostname
   - `port`: the port
-  - `path`: the path prefix to the API server
-  - `portal_url`: the portal URL to use (for enterprise mode)
-- `enterprise_mode`: enable enterprise mode
-- `detect_proxy`: enable or disable proxy detection
 - `tools`: paths to binaries used by the plugin:
 
   - `uname`: not needed on Windows, defaults given.
@@ -104,8 +100,6 @@ cmp.setup({
     }
 })
 ```
-
-If you are seeing the `codeium` source as unused in `:CmpStatus`, make sure that `nvim-cmp` setup happens before the `codeium.nvim` setup.
 
 To set a symbol for codeium using lspkind, use the `Codeium` keyword. Example:
 
