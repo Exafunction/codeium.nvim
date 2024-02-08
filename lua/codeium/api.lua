@@ -67,7 +67,11 @@ end
 function Server.authenticate()
 	local attempts = 0
 	local uuid = io.generate_uuid()
-	local url = "https://www.codeium.com/profile?response_type=token&redirect_uri=vim-show-auth-token&state="
+	local url = "https://"
+		.. config.api.host
+		.. ":"
+		.. config.api.port
+		.. "/profile?response_type=token&redirect_uri=vim-show-auth-token&state="
 		.. uuid
 		.. "&scope=openid%20profile%20email&redirect_parameters_type=query"
 
@@ -77,7 +81,17 @@ function Server.authenticate()
 			return
 		end
 
-		io.post("https://api.codeium.com/register_user/", {
+		local endpoint = "https://api.codeium.com/register_user/"
+
+		if config.options.enterprise_mode then
+			endpoint = "https://" .. config.options.api.host .. ":" .. config.options.api.port
+			if config.options.api.path then
+				endpoint = endpoint .. "/" .. config.options.api.path:gsub("^/", "")
+			end
+			endpoint = endpoint .. "/exa.seat_management_pb.SeatManagementService/RegisterUser"
+		end
+
+		io.post(endpoint, {
 			headers = {
 				accept = "application/json",
 			},
@@ -196,8 +210,13 @@ function Server:new()
 			log.debug(j.pid .. ": " .. v)
 		end
 
-		local api_server_url = "https://" .. config.options.api.host .. ":" .. config.options.api.port
-		job = io.job({
+		local api_server_url = "https://"
+			.. config.options.api.host
+			.. ":"
+			.. config.options.api.port
+			.. (config.options.api.path and "/" .. config.options.api.path:gsub("^/", "") or "")
+
+		local job_args = {
 			update.get_bin_info().bin,
 			"--api_server_url",
 			api_server_url,
@@ -208,7 +227,22 @@ function Server:new()
 			on_exit = on_exit,
 			on_stdout = on_output,
 			on_stderr = on_output,
-		})
+		}
+
+		if config.options.api.portal_url then
+			table.insert(job_args, "--portal_url")
+			table.insert(job_args, config.options.api.portal_url)
+		end
+
+		if config.options.enterprise_mode then
+			table.insert(job_args, "--enterprise_mode")
+		end
+
+		if config.options.detect_proxy ~= nil then
+			table.insert(job_args, "--detect_proxy=" .. tostring(config.options.detect_proxy))
+		end
+
+		local job = io.job(job_args)
 		job:start()
 
 		local function start_heartbeat()

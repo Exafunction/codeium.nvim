@@ -9,7 +9,11 @@ function M.defaults()
 		api = {
 			host = "server.codeium.com",
 			port = "443",
+			path = "/",
+			portal_url = nil,
 		},
+		enterprise_mode = nil,
+		detect_proxy = nil,
 		tools = {},
 		wrapper = nil,
 	}
