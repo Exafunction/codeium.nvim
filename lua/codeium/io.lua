@@ -211,7 +211,7 @@ function M.get_system_info()
 		os = "linux"
 	elseif os == "Darwin" then
 		os = "macos"
-	elseif os == "Windows_NT" then
+	elseif os == "Windows_NT" or os == "MINGW32_NT-10.0" then
 		os = "windows"
 	else
 		require("codeium.notify").warn("Unknown sysname: ", os)
