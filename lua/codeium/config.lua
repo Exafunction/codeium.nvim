@@ -10,7 +10,7 @@ function M.defaults()
 			host = "server.codeium.com",
 			port = "443",
 			path = "/",
-			portal_url = nil,
+			portal_url = "codeium.com",
 		},
 		enterprise_mode = nil,
 		detect_proxy = nil,
