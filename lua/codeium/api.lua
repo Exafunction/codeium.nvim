@@ -68,9 +68,9 @@ function Server.authenticate()
 	local attempts = 0
 	local uuid = io.generate_uuid()
 	local url = "https://"
-		.. config.api.host
+		.. config.options.api.host
 		.. ":"
-		.. config.api.port
+		.. config.options.api.port
 		.. "/profile?response_type=token&redirect_uri=vim-show-auth-token&state="
 		.. uuid
 		.. "&scope=openid%20profile%20email&redirect_parameters_type=query"
