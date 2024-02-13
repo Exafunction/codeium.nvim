@@ -32,6 +32,10 @@ end
 
 function M.apply_conditional_defaults(options)
 	if options.enterprise_mode then
+		if options.api == nil then
+			options.api = {}
+		end
+
 		if options.api.path == nil then
 			options.api.path = "/_route/api_server"
 		end
