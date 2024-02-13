@@ -1,3 +1,5 @@
+local notify = require("codeium.notify")
+
 local M = {}
 
 function M.defaults()
@@ -28,10 +30,31 @@ function M.installation_defaults()
 	end
 end
 
+function M.apply_conditional_defaults(options)
+	if options.enterprise_mode then
+		if options.api.path == nil then
+			options.api.path = "/_route/api_server"
+		end
+
+		if options.api.host == nil then
+			notify.warn("You need to specify api.host in enterprise mode")
+		else
+			if options.api.portal_url == nil then
+				options.api.portal_url = "https://" .. options.api.host .. ":" .. (options.api.port or "443")
+			end
+		end
+	end
+
+	return options
+end
+
 M.options = {}
 
 function M.setup(options)
 	options = options or {}
+
+	options = M.apply_conditional_defaults(options)
+
 	M.options = vim.tbl_deep_extend("force", {}, M.defaults(), M.installation_defaults(), options)
 end
 
