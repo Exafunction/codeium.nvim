@@ -229,7 +229,7 @@ function Server:new()
 
 		if config.options.api.portal_url then
 			table.insert(job_args, "--portal_url")
-			table.insert(job_args, config.options.api.portal_url)
+			table.insert(job_args, "https://" .. config.options.api.portal_url)
 		end
 
 		if config.options.enterprise_mode then

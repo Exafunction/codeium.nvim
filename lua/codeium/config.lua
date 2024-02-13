@@ -44,7 +44,7 @@ function M.apply_conditional_defaults(options)
 			notify.warn("You need to specify api.host in enterprise mode")
 		else
 			if options.api.portal_url == nil then
-				options.api.portal_url = "https://" .. options.api.host .. ":" .. (options.api.port or "443")
+				options.api.portal_url = options.api.host .. ":" .. (options.api.port or "443")
 			end
 		end
 	end

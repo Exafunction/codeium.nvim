@@ -71,10 +71,10 @@ your browser and pasting it into API token request.
 - `config_path`: the path to the config file, used to store the API key.
 - `bin_path`: the path to the directory where the Codeium server will be downloaded to.
 - `api`: information about the API server to use:
-  - `host`: the hostname
-  - `port`: the port
-  - `path`: the path prefix to the API server
-  - `portal_url`: the portal URL to use (for enterprise mode)
+  - `host`: the hostname. Example: `"codeium.example.com"`. Required when using enterprise mode
+  - `port`: the port. Defaults to `443`
+  - `path`: the path prefix to the API server. Default for enterprise: `"/_route/api_server"`
+  - `portal_url`: the portal URL to use (for enterprise mode). Defaults to `host:port`
 - `enterprise_mode`: enable enterprise mode
 - `detect_proxy`: enable or disable proxy detection
 - `tools`: paths to binaries used by the plugin:
