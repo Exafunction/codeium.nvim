@@ -19,6 +19,9 @@ function M.setup(options)
 		if args[1] == "Auth" then
 			Server.authenticate()
 		end
+		if args[1] == "Chat" then
+			s.get_chat_ports()
+		end
 	end, {
 		nargs = 1,
 		complete = function()
