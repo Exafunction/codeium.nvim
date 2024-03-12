@@ -343,7 +343,7 @@ function M.gunzip(path, callback)
 			vim.o.shell = "powershell"
 		end
 		vim.o.shellcmdflag =
-		"-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+			"-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
 		vim.o.shellredir = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
 		vim.o.shellpipe = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
 		vim.o.shellquote = ""
@@ -436,7 +436,7 @@ function M.shell_open(url)
 	elseif info.os == "macos" then
 		return M.get_command_output("/usr/bin/open", url)
 	else
-		return M.get_command_output("cmd", "/C start " .. url:gsub("&"), "^&")
+		return M.get_command_output("cmd", "/C start " .. url:gsub("&", "^&"))
 	end
 end
 
