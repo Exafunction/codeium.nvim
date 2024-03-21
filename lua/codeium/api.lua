@@ -4,6 +4,7 @@ local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
+local util = require("codeium.util")
 local api_key = nil
 
 local function find_port(manager_dir, start_time)
@@ -227,6 +228,21 @@ function Server:new()
 			on_stderr = on_output,
 		}
 
+		if config.options.enable_chat then
+			table.insert(job_args, "--enable_chat_web_server")
+			table.insert(job_args, "--enable_chat_client")
+		end
+
+		if config.options.enable_local_search then
+			table.insert(job_args, "--enable_local_search")
+		end
+
+		if config.options.enable_index_service then
+			table.insert(job_args, "--enable_index_service")
+			table.insert(job_args, "--search_max_workspace_file_count")
+			table.insert(job_args, config.options.search_max_workspace_file_count)
+		end
+
 		if config.options.api.portal_url then
 			table.insert(job_args, "--portal_url")
 			table.insert(job_args, "https://" .. config.options.api.portal_url)
@@ -354,6 +370,40 @@ function Server:new()
 			metadata = get_request_metadata(),
 			completion_id = completion_id,
 		}, noop)
+	end
+
+	function m.get_chat_ports()
+		request("GetProcesses", {
+			metadata = get_request_metadata(),
+		}, function(body, err)
+			if err then
+				notify.error("failed to get chat ports", err)
+				return
+			end
+			local ports = vim.fn.json_decode(body)
+			os.execute(
+				"xdg-open 'http://127.0.0.1:"
+					.. ports.chatClientPort
+					.. "?api_key="
+					.. api_key
+					.. "&has_enterprise_extension="
+					.. (config.options.enterprise_mode and "true" or "false")
+					.. "&web_server_url=ws://127.0.0.1:"
+					.. ports.chatWebServerPort
+					.. "&ide_name=neovim"
+					.. "&ide_version="
+					.. versions.nvim
+					.. "&app_name=codeium.nvim"
+					.. "&extension_name=codeium.nvim"
+					.. "&extension_version="
+					.. versions.extension
+					.. "&ide_telemetry_enabled=true"
+					.. "&has_index_service="
+					.. (config.options.enable_index_service and "true" or "false")
+					.. "&locale=en_US"
+					.. "'"
+			)
+		end)
 	end
 
 	function m.shutdown()

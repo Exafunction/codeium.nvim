@@ -77,6 +77,7 @@ your browser and pasting it into API token request.
   - `portal_url`: the portal URL to use (for enterprise mode). Defaults to `host:port`
 - `enterprise_mode`: enable enterprise mode
 - `detect_proxy`: enable or disable proxy detection
+- `enable_chat`: enable chat functionality
 - `tools`: paths to binaries used by the plugin:
 
   - `uname`: not needed on Windows, defaults given.

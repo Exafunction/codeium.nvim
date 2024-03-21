@@ -18,6 +18,10 @@ function M.defaults()
 		detect_proxy = nil,
 		tools = {},
 		wrapper = nil,
+		enable_chat = false,
+		enable_local_search = false,
+		enable_index_service = false,
+		search_max_workspace_file_count = 5000,
 	}
 end
 
