@@ -407,6 +407,8 @@ function Server:new()
 				os.execute("xdg-open '" .. url .. "'")
 			elseif os_info.os == "macos" then
 				os.execute("open '" .. url .. "'")
+			elseif os_info.os == "windows" then
+				os.execute("start '" .. url .. "'")
 			else
 				notify.error("Unsupported operating system")
 			end
