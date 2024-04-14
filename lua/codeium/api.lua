@@ -143,6 +143,7 @@ function Server:new()
 	local port = nil
 	local job = nil
 	local current_cookie = nil
+	local workspaces = {}
 	local healthy = false
 
 	local function request(fn, payload, callback)
@@ -370,6 +371,28 @@ function Server:new()
 			metadata = get_request_metadata(),
 			completion_id = completion_id,
 		}, noop)
+	end
+
+	function m.add_workspace()
+		local project_root = vim.fn.getcwd()
+		-- workspace already tracked by server
+		if workspaces[project_root] then
+			return
+		end
+		-- unable to track hidden path
+		for entry in project_root:gmatch("[^/]+") do
+			if entry:sub(1, 1) == "." then
+				return
+			end
+		end
+
+		request("AddTrackedWorkspace", { workspace = project_root, metadata = get_request_metadata() }, function(_, err)
+			if err then
+				notify.error("failed to add workspace: " .. err.out)
+				return
+			end
+			workspaces[project_root] = true
+		end)
 	end
 
 	function m.get_chat_ports()

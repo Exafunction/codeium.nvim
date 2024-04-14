@@ -21,6 +21,7 @@ function M.setup(options)
 		end
 		if args[1] == "Chat" then
 			s.get_chat_ports()
+			s.add_workspace()
 		end
 	end, {
 		nargs = 1,
