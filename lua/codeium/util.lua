@@ -18,14 +18,14 @@ function M.get_editor_options(bufnr)
 
 	return {
 		tab_size = M.fallback_call({
-			{ vim.api.nvim_buf_get_option, bufnr, "shiftwidth" },
-			{ vim.api.nvim_buf_get_option, bufnr, "tabstop" },
-			{ vim.api.nvim_get_option, "shiftwidth" },
-			{ vim.api.nvim_get_option, "tabstop" },
+			{ vim.api.nvim_buf_get_option, bufnr,       "shiftwidth" },
+			{ vim.api.nvim_buf_get_option, bufnr,       "tabstop" },
+			{ vim.api.nvim_get_option,     "shiftwidth" },
+			{ vim.api.nvim_get_option,     "tabstop" },
 		}, greater_than_zero, 4),
 		insert_spaces = M.fallback_call({
-			{ vim.api.nvim_buf_get_option, bufnr, "expandtab" },
-			{ vim.api.nvim_get_option, "expandtab" },
+			{ vim.api.nvim_buf_get_option, bufnr,      "expandtab" },
+			{ vim.api.nvim_get_option,     "expandtab" },
 		}, nil, true),
 	}
 end
