@@ -286,7 +286,7 @@ function Server:new()
 	local function noop(...) end
 
 	local pending_request = { 0, noop }
-	function m.request_completion(document, editor_options, callback)
+	function m.request_completion(document, editor_options, other_documents, callback)
 		pending_request[2](true)
 
 		local metadata = get_request_metadata()
@@ -324,6 +324,7 @@ function Server:new()
 			metadata = metadata,
 			editor_options = editor_options,
 			document = document,
+			other_documents = other_documents,
 		}, function(body, err)
 			if err then
 				if err.status == 503 or err.status == 408 then
