@@ -17,7 +17,6 @@ local function codeium_to_cmp(comp, offset, right)
 	local label = documentation:sub(offset)
 	if label:sub(- #right) == right then
 		label = label:sub(1, - #right - 1)
-
 	end
 
 	-- We get the completion part that has the largest offset
