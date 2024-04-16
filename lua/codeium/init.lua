@@ -21,11 +21,16 @@ function M.setup(options)
 		end
 		if args[1] == "Chat" then
 			s.get_chat_ports()
+			s.add_workspace()
 		end
 	end, {
 		nargs = 1,
 		complete = function()
-			return { "Auth" }
+			local commands = {"Auth"}
+			if require("codeium.config").options.enable_chat then
+				commands = vim.list_extend(commands, {"Chat"})
+			end
+			return commands
 		end,
 	})
 
