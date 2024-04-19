@@ -1,4 +1,5 @@
 local enums = require("codeium.enums")
+---@class codeium.util
 local M = {}
 
 function M.fallback_call(calls, with_filter, fallback_value)

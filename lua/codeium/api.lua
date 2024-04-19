@@ -4,7 +4,6 @@ local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
-local util = require("codeium.util")
 local api_key = nil
 
 local function find_port(manager_dir, start_time)
@@ -36,6 +35,7 @@ local function get_request_metadata(request_id)
 	}
 end
 
+---@class codeium.Server
 local Server = {}
 Server.__index = Server
 
@@ -133,6 +133,7 @@ function Server.authenticate()
 	prompt()
 end
 
+---@return codeium.Server
 function Server:new()
 	local m = {}
 	setmetatable(m, self)

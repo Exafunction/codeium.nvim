@@ -99,6 +99,7 @@ local function get_other_documents(bufnr)
 	return other_documents
 end
 
+---@class codeium.Source
 local Source = {
 	server = nil,
 }

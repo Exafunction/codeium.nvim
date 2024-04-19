@@ -2,6 +2,8 @@ local config = require("codeium.config")
 local versions = require("codeium.versions")
 local io = require("codeium.io")
 local notify = require("codeium.notify")
+
+---@class codeium.update
 local M = {}
 
 local cached = nil

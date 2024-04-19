@@ -4,7 +4,8 @@ function M.setup(options)
 	local Source = require("codeium.source")
 	local Server = require("codeium.api")
 	local update = require("codeium.update")
-	require("codeium.config").setup(options)
+	local config = require("codeium.config")
+	config.setup(options)
 
 	local s = Server:new()
 	update.download(function(err)
@@ -27,7 +28,7 @@ function M.setup(options)
 		nargs = 1,
 		complete = function()
 			local commands = {"Auth"}
-			if require("codeium.config").options.enable_chat then
+			if config.options.enable_chat then
 				commands = vim.list_extend(commands, {"Chat"})
 			end
 			return commands
