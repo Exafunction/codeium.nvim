@@ -142,6 +142,7 @@ function Server:new()
 	setmetatable(o, m)
 
 	local port = nil
+	local chat_ports = nil
 	local job = nil
 	local current_cookie = nil
 	local workspaces = {}
@@ -149,6 +150,14 @@ function Server:new()
 
 	local function request(fn, payload, callback)
 		local url = "http://127.0.0.1:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
+		io.post(url, {
+			body = payload,
+			callback = callback,
+		})
+	end
+
+	local function chat_request(fn, payload, callback)
+		local url = "http://127.0.0.1:" .. chat_ports.chatClientPort .. "/exa.language_server_pb.LanguageServerService/" .. fn
 		io.post(url, {
 			body = payload,
 			callback = callback,
@@ -279,6 +288,7 @@ function Server:new()
 
 			port = find_port(manager_dir, start_time)
 			if port then
+				notify.info("Codeium server started")
 				cancel()
 				start_heartbeat()
 			end
@@ -397,47 +407,74 @@ function Server:new()
 		end)
 	end
 
-	function m.get_chat_ports()
-		request("GetProcesses", {
-			metadata = get_request_metadata(),
-		}, function(body, err)
-			if err then
-				notify.error("failed to get chat ports", err)
+	function m.init_chat()
+		io.timer(100, 500, function(cancel)
+			if not port then
 				return
 			end
-			local ports = vim.fn.json_decode(body)
-			local url = "http://127.0.0.1:"
-				.. ports.chatClientPort
-				.. "?api_key="
-				.. api_key
-				.. "&has_enterprise_extension="
-				.. (config.options.enterprise_mode and "true" or "false")
-				.. "&web_server_url=ws://127.0.0.1:"
-				.. ports.chatWebServerPort
-				.. "&ide_name=neovim"
-				.. "&ide_version="
-				.. versions.nvim
-				.. "&app_name=codeium.nvim"
-				.. "&extension_name=codeium.nvim"
-				.. "&extension_version="
-				.. versions.extension
-				.. "&ide_telemetry_enabled=true"
-				.. "&has_index_service="
-				.. (config.options.enable_index_service and "true" or "false")
-				.. "&locale=en_US"
-
-			-- cross-platform solution to open the web app
-			local os_info = io.get_system_info()
-			if os_info.os == "linux" then
-				os.execute("xdg-open '" .. url .. "'")
-			elseif os_info.os == "macos" then
-				os.execute("open '" .. url .. "'")
-			elseif os_info.os == "windows" then
-				os.execute("start " .. url)
-			else
-				notify.error("Unsupported operating system")
-			end
+			request("GetProcesses", {
+				metadata = get_request_metadata(),
+			}, function(body, err)
+				if err then
+					notify.error("failed to get chat ports", err)
+					cancel()
+					return
+				end
+				chat_ports = vim.fn.json_decode(body)
+				notify.info("Codeium chat ready to use")
+				cancel()
+			end)
 		end)
+	end
+
+	function m.open_chat()
+		if chat_ports == nil then
+			notify.error("chat ports not found")
+			return
+		end
+		local url = "http://127.0.0.1:"
+			.. chat_ports.chatClientPort
+			.. "?api_key="
+			.. api_key
+			.. "&has_enterprise_extension="
+			.. (config.options.enterprise_mode and "true" or "false")
+			.. "&web_server_url=ws://127.0.0.1:"
+			.. chat_ports.chatWebServerPort
+			.. "&ide_name=neovim"
+			.. "&ide_version="
+			.. versions.nvim
+			.. "&app_name=codeium.nvim"
+			.. "&extension_name=codeium.nvim"
+			.. "&extension_version="
+			.. versions.extension
+			.. "&ide_telemetry_enabled=true"
+			.. "&has_index_service="
+			.. (config.options.enable_index_service and "true" or "false")
+			.. "&locale=en_US"
+
+		-- cross-platform solution to open the web app
+		local os_info = io.get_system_info()
+		if os_info.os == "linux" then
+			os.execute("xdg-open '" .. url .. "'")
+		elseif os_info.os == "macos" then
+			os.execute("open '" .. url .. "'")
+		elseif os_info.os == "windows" then
+			os.execute("start " .. url)
+		else
+			notify.error("Unsupported operating system")
+		end
+	end
+
+	function m.request_chat_action(document, editor_options, prompt, callback)
+		local body = {
+			message_id = 1,
+			source = 'User',
+			timestamp = timestamp(),
+			conversation_id = 1,
+			content = { indents = { generic = { text = prompt } } },
+			in_progress = false
+		}
+		m.chat_request("GetAction", body, "prompt", callback)
 	end
 
 	function m.shutdown()

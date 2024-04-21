@@ -1,28 +1,35 @@
-local M = {}
+local M = {
+	Server = nil,
+	Config = nil
+}
 
 function M.setup(options)
-	local Source = require("codeium.source")
-	local Server = require("codeium.api")
+	local source = require("codeium.source")
+	local server = require("codeium.api")
 	local update = require("codeium.update")
 	local config = require("codeium.config")
 	config.setup(options)
+	Config = config.options
 
-	local s = Server:new()
+	Server = server:new()
 	update.download(function(err)
 		if not err then
-			Server.load_api_key()
-			s.start()
+			server.load_api_key()
+			Server.start()
+			if config.options.enable_chat then
+				Server.init_chat()
+			end
 		end
 	end)
 
 	vim.api.nvim_create_user_command("Codeium", function(opts)
 		local args = opts.fargs
 		if args[1] == "Auth" then
-			Server.authenticate()
+			server.authenticate()
 		end
 		if args[1] == "Chat" then
-			s.get_chat_ports()
-			s.add_workspace()
+			Server.open_chat()
+			Server.add_workspace()
 		end
 	end, {
 		nargs = 1,
@@ -35,8 +42,19 @@ function M.setup(options)
 		end,
 	})
 
-	local source = Source:new(s)
+	local source = source:new(Server)
 	require("cmp").register_source("codeium", source)
+end
+
+function M.open_chat()
+	if not Config.enable_chat then
+		return
+	end
+	Server.open_chat()
+end
+
+function M.add_workspace()
+	Server.add_workspace()
 end
 
 return M
