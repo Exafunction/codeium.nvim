@@ -1,4 +1,5 @@
 local versions = require("codeium.versions")
+local chat = require("codeium.chat")
 local config = require("codeium.config")
 local io = require("codeium.io")
 local log = require("codeium.log")
@@ -149,6 +150,10 @@ function Server:new()
 	local healthy = false
 
 	local function request(fn, payload, callback)
+		if not port then
+			notify.info("Server not started yet")
+			return
+		end
 		local url = "http://127.0.0.1:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
 		io.post(url, {
 			body = payload,
@@ -156,10 +161,12 @@ function Server:new()
 		})
 	end
 
-	local function chat_request(fn, payload, callback)
-		local url = "http://127.0.0.1:" .. chat_ports.chatClientPort .. "/exa.language_server_pb.LanguageServerService/" .. fn
+	local function chat_server_request(fn, payload, callback)
+		local url = "http://127.0.0.1:" ..
+			chat_ports.chatWebServerPort .. "/exa.language_server_pb.LanguageServerService/" .. fn
+		local body = { metadata = get_request_metadata(), chat_message = payload }
 		io.post(url, {
-			body = payload,
+			body = body,
 			callback = callback,
 		})
 	end
@@ -287,8 +294,9 @@ function Server:new()
 			end
 
 			port = find_port(manager_dir, start_time)
+			-- port = 42100
 			if port then
-				notify.info("Codeium server started")
+				notify.info("Codeium server started on port " .. port)
 				cancel()
 				start_heartbeat()
 			end
@@ -385,30 +393,49 @@ function Server:new()
 		}, noop)
 	end
 
+	local codeium_workspace_root_hints = { '.bzr', '.git', '.hg', '.svn', '_FOSSIL_', 'package.json' }
+	function GetProjectRoot()
+		local last_dir = ''
+		local dir = vim.fn.getcwd()
+		while dir ~= last_dir do
+			for root_hint in ipairs(codeium_workspace_root_hints) do
+				local hint = dir .. '/' .. root_hint
+				if vim.fn.isdirectory(hint) or vim.fn.filereadable(hint) then
+					return dir
+				end
+			end
+			last_dir = dir
+			dir = vim.fn.fnamemodify(dir, ':h')
+		end
+		return vim.fn.getcwd()
+	end
+
 	function m.add_workspace()
-		local project_root = vim.fn.getcwd()
+		local project_root = GetProjectRoot()
 		-- workspace already tracked by server
 		if workspaces[project_root] then
 			return
 		end
-		-- unable to track hidden path
-		for entry in project_root:gmatch("[^/]+") do
-			if entry:sub(1, 1) == "." then
-				return
-			end
-		end
 
-		request("AddTrackedWorkspace", { workspace = project_root, metadata = get_request_metadata() }, function(_, err)
-			if err then
-				notify.error("failed to add workspace: " .. err.out)
+		io.timer(300, 500, function(cancel)
+			if not port then
 				return
 			end
-			workspaces[project_root] = true
+			request("AddTrackedWorkspace", { workspace = project_root, metadata = get_request_metadata() },
+				function(_, err)
+					if err then
+						notify.error("failed to add workspace: " .. err.out)
+						return
+					end
+					workspaces[project_root] = true
+					notify.info("Workspace " .. project_root .. " added")
+				end)
+			cancel()
 		end)
 	end
 
 	function m.init_chat()
-		io.timer(100, 500, function(cancel)
+		io.timer(200, 500, function(cancel)
 			if not port then
 				return
 			end
@@ -421,7 +448,7 @@ function Server:new()
 					return
 				end
 				chat_ports = vim.fn.json_decode(body)
-				notify.info("Codeium chat ready to use")
+				notify.info("Codeium chat ready to use on server ports: client port " .. chat_ports.chatClientPort .. " and server port" .. chat_ports.chatWebServerPort)
 				cancel()
 			end)
 		end)
@@ -465,16 +492,66 @@ function Server:new()
 		end
 	end
 
-	function m.request_chat_action(document, editor_options, prompt, callback)
+	local function getNonce()
+		local possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		local nonce = ""
+
+		for _ = 1, 32 do
+			local randomIndex = math.random(1, #possible)
+			nonce = nonce .. string.sub(possible, randomIndex, randomIndex)
+		end
+
+		return nonce
+	end
+
+	---@param indent table
+	---@param callback function
+	local function request_chat_action(indent, callback)
+		local current_timestamp = os.time()
+		local message_id = "user-" .. tostring(current_timestamp)
 		local body = {
-			message_id = 1,
-			source = 'User',
-			timestamp = timestamp(),
-			conversation_id = 1,
-			content = { indents = { generic = { text = prompt } } },
+			message_id = message_id,
+			source = 'CHAT_MESSAGE_SOURCE_USER',
+			timestamp = current_timestamp,
+			conversation_id = getNonce(),
+			content = { indent = indent },
 			in_progress = false
 		}
-		m.chat_request("GetAction", body, "prompt", callback)
+		chat_server_request("GetChatMessage", body, callback)
+	end
+
+	function m.request_generate_code()
+		request_chat_action(chat.intent_generate_code(), function(body, err)
+			if err then
+				notify.error("Error code: " .. err.code)
+				notify.error("Error message: " .. err.out)
+				notify.error("Error status: " .. err.status)
+				notify.error("Error response: " .. err.response)
+			else
+				notify.info("Explain: " .. body)
+			end
+		end)
+	end
+
+	function m.open_connection()
+		io.timer(200, 500, function(cancel)
+			if not port then
+				return
+			end
+			local url = "http://127.0.0.1:" .. chat_ports.chatClientPort .. "/api/chat_enabled"
+			callback = function(body, err)
+				if err then
+					notify.error("chat response", err)
+					cancel()
+					return
+				end
+				notify.info("Response: " .. body)
+			end
+			io.post(url, {
+				body = { metadata = get_request_metadata() },
+				callback = callback,
+			})
+		end)
 	end
 
 	function m.shutdown()
