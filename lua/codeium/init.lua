@@ -68,4 +68,14 @@ function M.generate_code()
 	M.Server.request_generate_code()
 end
 
+function M.explain()
+	M.Server.open_connection()
+	M.Server.request_explain_code()
+end
+
+function M.add_docstring()
+	M.Server.open_connection()
+	M.Server.request_docstring()
+end
+
 return M

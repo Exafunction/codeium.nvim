@@ -533,6 +533,32 @@ function Server:new()
 		end)
 	end
 
+	function m.request_explain_code()
+		request_chat_action(chat.intent_code_block_explain(), function(body, err)
+			if err then
+				notify.error("Error code: " .. err.code)
+				notify.error("Error message: " .. err.out)
+				notify.error("Error status: " .. err.status)
+				notify.error("Error response: " .. err.response)
+			else
+				notify.info("Explain: " .. body)
+			end
+		end)
+	end
+
+	function m.request_docstring()
+		request_chat_action(chat.intent_function_docstring(), function(body, err)
+			if err then
+				notify.error("Error code: " .. err.code)
+				notify.error("Error message: " .. err.out)
+				notify.error("Error status: " .. err.status)
+				notify.error("Error response: " .. err.response)
+			else
+				notify.info("Explain: " .. body)
+			end
+		end)
+	end
+
 	function m.open_connection()
 		io.timer(200, 500, function(cancel)
 			if not port then

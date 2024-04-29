@@ -1,4 +1,5 @@
 local enums = require("codeium.enums")
+local util = require("codeium.util")
 ---@class codeium.Chat
 local chat = {}
 
@@ -55,7 +56,19 @@ end
 -- int32 end_line = 4;
 -- int32 end_col = 5;
 local function code_block_info()
-	return { raw_source = "", start_line = 0, start_col = 0, end_line = 1, end_col = 1 }
+	-- Get the current buffer
+	local current_buffer = vim.api.nvim_get_current_buf()
+
+	-- Get the start and end positions of the visual selection
+	local start_line, start_col = unpack(vim.api.nvim_buf_get_mark(current_buffer, "<"))
+	local end_line, end_col = unpack(vim.api.nvim_buf_get_mark(current_buffer, ">"))
+
+	local lines = vim.api.nvim_buf_get_lines(current_buffer, start_line, end_line, true)
+	local line_ending = util.get_newline(current_buffer)
+	table.insert(lines, "")
+	local text = table.concat(lines, line_ending)
+
+	return { raw_source = text, start_line = start_line, start_col = start_col, end_line = end_line, end_col = end_col }
 end
 
 
@@ -71,7 +84,8 @@ end
 -- string file_path = 3;
 -- string refactor_description = 4;
 function chat.intent_function_refactor()
-	return { function_refactor = { function_info = function_info(), language = language(), file_path = "", refactor_description = "" } }
+	local file_path = vim.api.nvim_buf_get_name(0)
+	return { function_refactor = { function_info = function_info(), language = language(), file_path = file_path, refactor_description = "" } }
 end
 
 -- codeium_common_pb.FunctionInfo function_info = 1;
@@ -81,7 +95,9 @@ end
 --  --Optional additional instructions to inform what tests to generate.
 -- string instructions = 4;
 function chat.intent_function_unit_tests()
-	return { function_unit_tests = { function_info = function_info(), language = language(), file_path = "", instructions = "" } }
+	local prompt = vim.fn.input("Unit test instructions: ")
+	local file_path = vim.api.nvim_buf_get_name(0)
+	return { function_unit_tests = { function_info = function_info(), language = language(), file_path = file_path, instructions = prompt } }
 end
 
 --Ask for a docstring for a function.
@@ -89,7 +105,8 @@ end
 -- codeium_common_pb.Language language = 2;
 -- string file_path = 3;
 function chat.intent_function_docstring()
-	return { function_docstring = { function_info = function_info(), language = language(), file_path = "" } }
+	local file_path = vim.api.nvim_buf_get_name(0)
+	return { function_docstring = { function_info = function_info(), language = language(), file_path = file_path } }
 end
 
 --Ask to explain a generic piece of code.
@@ -97,7 +114,8 @@ end
 -- codeium_common_pb.Language language = 2;
 -- string file_path = 3;
 function chat.intent_code_block_explain()
-	return { code_block_explain = { code_block_info = code_block_info(), language = language(), file_path = "" } }
+	local file_path = vim.api.nvim_buf_get_name(0)
+	return { code_block_explain = { code_block_info = code_block_info(), language = language(), file_path = file_path } }
 end
 
 --Ask to refactor a generic piece of code.
@@ -106,7 +124,8 @@ end
 -- string file_path = 3;
 -- string refactor_description = 4;
 function chat.intent_code_block_refactor()
-	return { code_block_refactor = { code_block_info = code_block_info(), language = language(), file_path = "", refactor_description = "" } }
+	local file_path = vim.api.nvim_buf_get_name(0)
+	return { code_block_refactor = { code_block_info = code_block_info(), language = language(), file_path = file_path, refactor_description = "" } }
 end
 
 --Ask to explain a problem.
@@ -117,13 +136,14 @@ end
 -- string file_path = 5;
 -- int32 line_number = 6;
 function chat.intent_problem_explain()
+	local file_path = vim.api.nvim_buf_get_name(0)
 	return {
 		problem_explain = {
 			diagnostic_function = "",
 			problematic_code = code_block_info(),
 			surrounding_code_snippet = "",
 			language = language(),
-			file_path = "",
+			file_path = file_path,
 			line_number = 0
 		}
 	}
