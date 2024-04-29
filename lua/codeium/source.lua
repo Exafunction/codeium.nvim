@@ -100,6 +100,7 @@ local function get_other_documents(bufnr)
 end
 
 ---@class codeium.Source
+---@field server codeium.Server|nil
 local Source = {
 	server = nil,
 }
@@ -114,7 +115,7 @@ function Source:new(server)
 end
 
 function Source:is_available()
-	return self.server.is_healthy()
+	return self.server:is_healthy()
 end
 
 function Source:get_position_encoding_kind()
@@ -131,7 +132,7 @@ require("cmp").event:on("confirm_done", function(event)
 		and event.entry.source.source
 		and event.entry.source.source.server
 	then
-		event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
+		event.entry.source.source.server:accept_completion(event.entry.completion_item.codeium_completion_id)
 	end
 end)
 
@@ -181,7 +182,7 @@ function Source:complete(params, callback)
 
 	local other_documents = get_other_documents(bufnr)
 
-	self.server.request_completion(
+	self.server:request_completion(
 		{
 			editor_language = filetype,
 			language = language,

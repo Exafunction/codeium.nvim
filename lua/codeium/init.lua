@@ -19,23 +19,23 @@ function M.setup(options)
 	M.Server = server:new()
 	update.download(function(err)
 		if not err then
-			server.load_api_key()
-			M.Server.start()
+			M.Server.load_api_key()
+			M.Server:start()
 			if config.options.enable_chat then
-				M.Server.init_chat()
+				M.Server:init_chat()
 			end
-			M.Server.add_workspace()
+			M.Server:add_workspace()
 		end
 	end)
 
 	vim.api.nvim_create_user_command("Codeium", function(opts)
 		local args = opts.fargs
 		if args[1] == "Auth" then
-			server.authenticate()
+			M.Server.authenticate()
 		end
 		if args[1] == "Chat" then
-			M.Server.open_chat()
-			M.Server.add_workspace()
+			M.Server:open_chat()
+			M.Server:add_workspace()
 		end
 	end, {
 		nargs = 1,
@@ -56,26 +56,23 @@ function M.open_chat()
 		notify.info("Codeium Chat disabled")
 		return
 	end
-	M.Server.open_chat()
+	M.Server:open_chat()
 end
 
 function M.add_workspace()
-	M.Server.add_workspace()
+	M.Server:add_workspace()
 end
 
 function M.generate_code()
-	M.Server.open_connection()
-	M.Server.request_generate_code()
+	M.Server:request_generate_code()
 end
 
 function M.explain()
-	M.Server.open_connection()
-	M.Server.request_explain_code()
+	M.Server:request_explain_code()
 end
 
 function M.add_docstring()
-	M.Server.open_connection()
-	M.Server.request_docstring()
+	M.Server:request_docstring()
 end
 
 return M
