@@ -71,6 +71,10 @@ function M.explain()
 	M.Server:request_explain_code()
 end
 
+function M.refactor()
+	M.Server:request_refactor()
+end
+
 function M.add_docstring()
 	M.Server:request_docstring()
 end

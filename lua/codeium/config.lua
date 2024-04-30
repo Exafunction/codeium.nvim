@@ -75,7 +75,7 @@ end
 ---@field search_max_workspace_file_count number
 M.options = {}
 
----@param options codeium.options|nil
+---@param options? codeium.options
 function M.setup(options)
 	options = options or {}
 

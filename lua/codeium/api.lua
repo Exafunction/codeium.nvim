@@ -5,6 +5,7 @@ local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
+local utils = require("codeium.util")
 local api_key = nil
 
 local function noop(...) end
@@ -564,7 +565,7 @@ function Server:request_explain_code()
 end
 
 function Server:request_docstring()
-	self:request_chat_action(chat.intent_function_docstring(), function(body, err)
+	self:request_function_action(chat.intent_function_docstring, function(body, err)
 		if err then
 			notify.error("Error code: " .. err.code)
 			notify.error("Error message: " .. err.out)
@@ -574,6 +575,45 @@ function Server:request_docstring()
 			notify.info("Explain: " .. body)
 		end
 	end)
+end
+
+
+function Server:request_refactor()
+	self:request_function_action(chat.intent_function_refactor, function(body, err)
+		if err then
+			notify.error("Error code: " .. err.code)
+			notify.error("Error message: " .. err.out)
+			notify.error("Error status: " .. err.status)
+			notify.error("Error response: " .. err.response)
+		else
+			notify.info("Explain: " .. body)
+		end
+	end)
+end
+
+---Request action for a function under cursor.
+---@param indent function
+---@param callback function
+function Server:request_function_action(indent, callback)
+	local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
+	self:request("GetFunctions", { document = utils.buf_to_codeium(0) },
+		function(body, err)
+			if err then
+				notify.error("failed to get functions: " .. err.out)
+				return
+			end
+
+			local ok, json = pcall(vim.fn.json_decode, body)
+			if ok and json then
+				for _, item in ipairs(json.functionCaptures) do
+					print("item: " .. item.nodeName)
+					if item.startLine <= row and item.endLine >= row then
+						self:request_chat_action(indent(item), callback)
+						return
+					end
+				end
+			end
+		end)
 end
 
 return Server

@@ -83,9 +83,10 @@ end
 -- codeium_common_pb.Language language = 2;
 -- string file_path = 3;
 -- string refactor_description = 4;
-function chat.intent_function_refactor()
+function chat.intent_function_refactor(func_info)
 	local file_path = vim.api.nvim_buf_get_name(0)
-	return { function_refactor = { function_info = function_info(), language = language(), file_path = file_path, refactor_description = "" } }
+	local prompt = vim.fn.input("Refactor description: ")
+	return { function_refactor = { function_info = func_info, language = language(), file_path = file_path, refactor_description = prompt } }
 end
 
 -- codeium_common_pb.FunctionInfo function_info = 1;
@@ -104,9 +105,9 @@ end
 -- codeium_common_pb.FunctionInfo function_info = 1;
 -- codeium_common_pb.Language language = 2;
 -- string file_path = 3;
-function chat.intent_function_docstring()
+function chat.intent_function_docstring(func_info)
 	local file_path = vim.api.nvim_buf_get_name(0)
-	return { function_docstring = { function_info = function_info(), language = language(), file_path = file_path } }
+	return { function_docstring = { function_info = func_info, language = language(), file_path = file_path } }
 end
 
 --Ask to explain a generic piece of code.
