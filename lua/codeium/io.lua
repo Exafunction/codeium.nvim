@@ -399,16 +399,27 @@ function M.download(url, path, callback)
 end
 
 function M.post(url, params)
+	local tmpfname = os.tmpname()
+
 	if type(params.body) == "table" then
+		local f = io.open(tmpfname, 'w+')
+		if f == nil then
+			log.error('Cannot open temporary message file: ' .. tmpfname)
+			return
+		end
+		f:write(vim.fn.json_encode(params.body))
+		f:close()
+
 		params.headers = params.headers or {}
 		params.headers["content-type"] = params.headers["content-type"] or "application/json"
 		params.compressed = false
-		params.body = vim.fn.json_encode(params.body)
+		params.body = tmpfname
 	end
 
 	local cb = vim.schedule_wrap(params.callback)
 
 	params.callback = function(out, _)
+		os.remove(tmpfname)
 		if out.exit ~= 0 then
 			cb(nil, {
 				code = out.exit,
