@@ -79,4 +79,12 @@ function M.add_docstring()
 	M.Server:request_docstring()
 end
 
+function M.connect_ide()
+	M.Server:connect_ide()
+end
+
+function M.stop()
+	M.Server:close()
+end
+
 return M

@@ -6,10 +6,12 @@ local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
 local utils = require("codeium.util")
+local wsclient = require('ws.websocket_client')
 local api_key = nil
 
 local function noop(...) end
 
+---@return string
 local function get_nonce()
 	local possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 	local nonce = ""
@@ -76,6 +78,7 @@ end
 ---@field workspaces table
 ---@field healthy boolean
 ---@field pending_request table
+---@field ws? WebSocketClient
 local Server = {
 	_port = nil,
 	job = nil,
@@ -84,6 +87,7 @@ local Server = {
 	workspaces = {},
 	healthy = false,
 	pending_request = { 0, noop },
+	ws = nil,
 }
 Server.__index = Server
 
@@ -306,6 +310,9 @@ function Server:start()
 	end)
 end
 
+---@param fn string
+---@param payload table
+---@param callback function
 function Server:request(fn, payload, callback)
 	if not self.port then
 		notify.info("Server not started yet")
@@ -506,95 +513,99 @@ end
 
 function Server:shutdown()
 	self.current_cookie = nil
+	if self.ws then
+		self.ws.close()
+	end
 	if self.job then
 		self.job.on_exit = nil
 		self.job:shutdown()
 	end
 end
 
-function Server:chat_server_request(fn, payload, callback)
-	local url = "http://127.0.0.1:" ..
-		self.chat_ports.chatWebServerPort .. "/exa.language_server_pb.LanguageServerService/" .. fn
-	local body = { metadata = get_request_metadata(), chat_message = payload }
-	io.post(url, {
-		body = body,
-		callback = callback,
-	})
+---@param payload table
+function Server:chat_server_request(payload)
+	local body = { get_chat_message_request = { metadata = get_request_metadata(), chat_message = payload } }
+	local input_string = vim.fn.json_encode(body)
+	print("request: " .. input_string)
+
+	-- self.ws.send(input_string, { is_binary = true })
+	self.ws.send(input_string)
+	print("request sent")
 end
 
 ---@param indent table
 ---@param callback function
-function Server:request_chat_action(indent, callback)
+function Server:request_chat_action(indent)
 	local current_timestamp = os.time()
 	local message_id = "user-" .. tostring(current_timestamp)
 	local body = {
 		message_id = message_id,
-		source = 'CHAT_MESSAGE_SOURCE_USER',
+		-- source = 'CHAT_MESSAGE_SOURCE_USER',
+		source = 1,
 		timestamp = current_timestamp,
 		conversation_id = get_nonce(),
 		content = { indent = indent },
 		in_progress = false
 	}
-	self:chat_server_request("GetChatMessage", body, callback)
+	self:chat_server_request(body)
 end
 
 function Server:request_generate_code()
-	self:request_chat_action(chat.intent_generate_code(), function(body, err)
-		if err then
-			notify.error("Error code: " .. err.code)
-			notify.error("Error message: " .. err.out)
-			notify.error("Error status: " .. err.status)
-			notify.error("Error response: " .. err.response)
-		else
-			notify.info("Explain: " .. body)
-		end
-	end)
+	self:request_chat_action(chat.intent_generate_code())
 end
 
 function Server:request_explain_code()
-	self:request_chat_action(chat.intent_code_block_explain(), function(body, err)
-		if err then
-			notify.error("Error code: " .. err.code)
-			notify.error("Error message: " .. err.out)
-			notify.error("Error status: " .. err.status)
-			notify.error("Error response: " .. err.response)
-		else
-			notify.info("Explain: " .. body)
-		end
-	end)
+	self:request_chat_action(chat.intent_code_block_explain())
 end
 
 function Server:request_docstring()
-	self:request_function_action(chat.intent_function_docstring, function(body, err)
-		if err then
-			notify.error("Error code: " .. err.code)
-			notify.error("Error message: " .. err.out)
-			notify.error("Error status: " .. err.status)
-			notify.error("Error response: " .. err.response)
-		else
-			notify.info("Explain: " .. body)
-		end
-	end)
+	self:request_function_action(chat.intent_function_docstring)
 end
 
-
 function Server:request_refactor()
-	self:request_function_action(chat.intent_function_refactor, function(body, err)
-		if err then
-			notify.error("Error code: " .. err.code)
-			notify.error("Error message: " .. err.out)
-			notify.error("Error status: " .. err.status)
-			notify.error("Error response: " .. err.response)
+	self:request_function_action(chat.intent_function_refactor)
+end
+
+function Server:connect_ide()
+	local url = "ws://127.0.0.1:" .. self.chat_ports.chatWebServerPort .. "/connect/ide"
+	-- local url = "ws://echo.websocket.in/"
+	print("Connecting to " .. url)
+	local ws = wsclient(url)
+
+	ws.on_close(function()
+		print("Websocket closed ")
+	end)
+
+	ws.on_open(function()
+		print("Websocket open")
+	end)
+
+	ws.on_error(function(err)
+		print("Websocket error " .. err)
+	end)
+
+	ws.on_message(function(msg, is_binary)
+		if is_binary then
+			print("Binary message received")
 		else
-			notify.info("Explain: " .. body)
+			local _msg = msg:to_string()
+			print("Message received " .. _msg)
 		end
 	end)
+
+	-- Connect to server.
+	ws.connect()
+
+	self.ws = ws
+end
+
+function Server:close()
+	self.ws.close()
 end
 
 ---Request action for a function under cursor.
 ---@param indent function
----@param callback function
-function Server:request_function_action(indent, callback)
+function Server:request_function_action(indent)
 	local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 	self:request("GetFunctions", { document = utils.buf_to_codeium(0) },
 		function(body, err)
@@ -606,9 +617,9 @@ function Server:request_function_action(indent, callback)
 			local ok, json = pcall(vim.fn.json_decode, body)
 			if ok and json then
 				for _, item in ipairs(json.functionCaptures) do
-					print("item: " .. item.nodeName)
+					-- print("item: " .. item.nodeName)
 					if item.startLine <= row and item.endLine >= row then
-						self:request_chat_action(indent(item), callback)
+						self:request_chat_action(indent(item))
 						return
 					end
 				end

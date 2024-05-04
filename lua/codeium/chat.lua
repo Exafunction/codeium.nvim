@@ -3,42 +3,6 @@ local util = require("codeium.util")
 ---@class codeium.Chat
 local chat = {}
 
-function chat.intent_generic(text)
-	return { text = text }
-end
-
--- string raw_source = 1;
--- string clean_function = 2;
--- string docstring = 3;
--- string node_name = 4;
--- string params = 5;
--- int32 definition_line = 6;
--- int32 start_line = 7;
--- int32 end_line = 8;
--- int32 start_col = 9;
--- int32 end_col = 10;
--- string leading_whitespace = 11;
--- Language language = 12;
-local function function_info()
-	local bufnr = vim.api.nvim_get_current_buf()
-	local filetype = enums.filetype_aliases[vim.bo[bufnr].filetype] or vim.bo[bufnr].filetype or "text"
-	local language = enums.languages[filetype] or enums.languages.unspecified
-	return {
-		raw_source = "",
-		clean_function = "",
-		docstring = "",
-		node_name = "",
-		params = "",
-		definition_line = 6,
-		start_line = 7,
-		end_line = 8,
-		start_col = 9,
-		end_col = 10,
-		leading_whitespace = "",
-		language = language
-	}
-end
-
 ---@return number
 local function language()
 	local bufnr = vim.api.nvim_get_current_buf()
@@ -75,8 +39,8 @@ end
 -- codeium_common_pb.FunctionInfo function_info = 1;
 -- codeium_common_pb.Language language = 2;
 -- string file_path = 3;
-function chat.intent_function_explain()
-	return { explain_function = { function_info = function_info(), language = language(), file_path = vim.api.nvim_buf_get_name(0) } }
+function chat.intent_function_explain(func_info)
+	return { explain_function = { function_info = func_info, language = language(), file_path = vim.api.nvim_buf_get_name(0) } }
 end
 
 -- codeium_common_pb.FunctionInfo function_info = 1;
@@ -95,10 +59,10 @@ end
 --
 --  --Optional additional instructions to inform what tests to generate.
 -- string instructions = 4;
-function chat.intent_function_unit_tests()
+function chat.intent_function_unit_tests(func_info)
 	local prompt = vim.fn.input("Unit test instructions: ")
 	local file_path = vim.api.nvim_buf_get_name(0)
-	return { function_unit_tests = { function_info = function_info(), language = language(), file_path = file_path, instructions = prompt } }
+	return { function_unit_tests = { function_info = func_info, language = language(), file_path = file_path, instructions = prompt } }
 end
 
 --Ask for a docstring for a function.

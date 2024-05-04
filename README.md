@@ -36,6 +36,7 @@ use {
     requires = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
+        "rohanorton/ws.nvim",
     },
     config = function()
         require("codeium").setup({
@@ -52,6 +53,7 @@ use {
     dependencies = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
+        "rohanorton/ws.nvim",
     },
     config = function()
         require("codeium").setup({
