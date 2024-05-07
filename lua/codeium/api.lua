@@ -301,7 +301,6 @@ function Server:start()
 		end
 
 		self.port = find_port(manager_dir, start_time)
-		-- port = 42100
 		if self.port then
 			notify.info("Codeium server started on port " .. self.port)
 			cancel()
@@ -528,26 +527,26 @@ function Server:chat_server_request(payload)
 	local input_string = vim.fn.json_encode(body)
 	print("request: " .. input_string)
 
-	-- self.ws.send(input_string, { is_binary = true })
 	self.ws.send(input_string)
 	print("request sent")
 end
 
----@param indent table
----@param callback function
-function Server:request_chat_action(indent)
-	local current_timestamp = os.time()
-	local message_id = "user-" .. tostring(current_timestamp)
-	local body = {
+---@param intent table
+function Server:request_chat_action(intent)
+	local current_timestamp = {
+		seconds = os.time(),
+		nanos = os.clock() * 1000000000   -- Assuming you want nanoseconds precision
+	}
+	local message_id = "user-" .. tostring(current_timestamp.nanos)
+	local chat_message = {
 		message_id = message_id,
-		-- source = 'CHAT_MESSAGE_SOURCE_USER',
-		source = 1,
+		source = 'CHAT_MESSAGE_SOURCE_USER',
 		timestamp = current_timestamp,
 		conversation_id = get_nonce(),
-		content = { indent = indent },
+		intent = intent,
 		in_progress = false
 	}
-	self:chat_server_request(body)
+	self:chat_server_request(chat_message)
 end
 
 function Server:request_generate_code()
@@ -555,7 +554,7 @@ function Server:request_generate_code()
 end
 
 function Server:request_explain_code()
-	self:request_chat_action(chat.intent_code_block_explain())
+	self:request_function_action(chat.intent_function_explain)
 end
 
 function Server:request_docstring()
@@ -568,7 +567,6 @@ end
 
 function Server:connect_ide()
 	local url = "ws://127.0.0.1:" .. self.chat_ports.chatWebServerPort .. "/connect/ide"
-	-- local url = "ws://echo.websocket.in/"
 	print("Connecting to " .. url)
 	local ws = wsclient(url)
 
@@ -604,8 +602,8 @@ function Server:close()
 end
 
 ---Request action for a function under cursor.
----@param indent function
-function Server:request_function_action(indent)
+---@param intent function
+function Server:request_function_action(intent)
 	local row, _ = unpack(vim.api.nvim_win_get_cursor(0))
 	self:request("GetFunctions", { document = utils.buf_to_codeium(0) },
 		function(body, err)
@@ -619,7 +617,7 @@ function Server:request_function_action(indent)
 				for _, item in ipairs(json.functionCaptures) do
 					-- print("item: " .. item.nodeName)
 					if item.startLine <= row and item.endLine >= row then
-						self:request_chat_action(indent(item))
+						self:request_chat_action(intent(item))
 						return
 					end
 				end
