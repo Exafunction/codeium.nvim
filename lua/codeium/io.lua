@@ -6,6 +6,7 @@ local curl = require("plenary.curl")
 local config = require("codeium.config")
 local default_mod = 438 -- 666
 
+---@class codeium.io
 local M = {}
 
 local function check_job(job, status)

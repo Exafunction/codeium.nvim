@@ -1,4 +1,5 @@
 local enums = require("codeium.enums")
+---@class codeium.util
 local M = {}
 
 function M.fallback_call(calls, with_filter, fallback_value)
@@ -32,6 +33,22 @@ end
 
 function M.get_newline(bufnr)
 	return enums.line_endings[vim.bo[bufnr].fileformat] or "\n"
+end
+
+function M.buf_to_codeium(bufnr)
+	local filetype = enums.filetype_aliases[vim.bo[bufnr].filetype] or vim.bo[bufnr].filetype or "text"
+	local language = enums.languages[filetype] or enums.languages.unspecified
+	local line_ending = M.get_newline(bufnr)
+	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
+	table.insert(lines, "")
+	local text = table.concat(lines, line_ending)
+	return {
+		editor_language = filetype,
+		language = language,
+		text = text,
+		line_ending = line_ending,
+		absolute_path = vim.api.nvim_buf_get_name(bufnr),
+	}
 end
 
 return M

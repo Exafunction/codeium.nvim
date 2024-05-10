@@ -1,7 +1,10 @@
 local notify = require("codeium.notify")
 
+---@class codeium.config
+---@field options codeium.options
 local M = {}
 
+---@return codeium.options
 function M.defaults()
 	return {
 		manager_path = nil,
@@ -56,8 +59,23 @@ function M.apply_conditional_defaults(options)
 	return options
 end
 
+---@class codeium.options
+---@field manager_path string
+---@field bin_path string
+---@field config_path string
+---@field language_server_download_url string
+---@field api table
+---@field enterprise_mode boolean
+---@field detect_proxy boolean
+---@field tools table
+---@field wrapper function
+---@field enable_chat boolean
+---@field enable_local_search boolean
+---@field enable_index_service boolean
+---@field search_max_workspace_file_count number
 M.options = {}
 
+---@param options? codeium.options
 function M.setup(options)
 	options = options or {}
 

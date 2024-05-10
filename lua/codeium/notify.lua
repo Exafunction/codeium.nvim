@@ -1,5 +1,6 @@
 local log = require("codeium.log")
 
+---@class codeium.notify
 local M = {}
 local opts = {
 	title = "Codeium",

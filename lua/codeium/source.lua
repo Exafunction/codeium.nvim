@@ -72,33 +72,20 @@ local function codeium_to_cmp(comp, offset, right)
 	}
 end
 
-local function buf_to_codeium(bufnr)
-	local filetype = enums.filetype_aliases[vim.bo[bufnr].filetype] or vim.bo[bufnr].filetype or "text"
-	local language = enums.languages[filetype] or enums.languages.unspecified
-	local line_ending = util.get_newline(bufnr)
-	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
-	table.insert(lines, "")
-	local text = table.concat(lines, line_ending)
-	return {
-		editor_language = filetype,
-		language = language,
-		text = text,
-		line_ending = line_ending,
-		absolute_path = vim.api.nvim_buf_get_name(bufnr),
-	}
-end
 
 local function get_other_documents(bufnr)
 	local other_documents = {}
 
 	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
 		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype ~= '' and buf ~= bufnr then
-			table.insert(other_documents, buf_to_codeium(buf))
+			table.insert(other_documents, util.buf_to_codeium(buf))
 		end
 	end
 	return other_documents
 end
 
+---@class codeium.Source
+---@field server codeium.Server|nil
 local Source = {
 	server = nil,
 }
@@ -113,7 +100,7 @@ function Source:new(server)
 end
 
 function Source:is_available()
-	return self.server.is_healthy()
+	return self.server:is_healthy()
 end
 
 function Source:get_position_encoding_kind()
@@ -130,7 +117,7 @@ require("cmp").event:on("confirm_done", function(event)
 		and event.entry.source.source
 		and event.entry.source.source.server
 	then
-		event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
+		event.entry.source.source.server:accept_completion(event.entry.completion_item.codeium_completion_id)
 	end
 end)
 
@@ -180,7 +167,7 @@ function Source:complete(params, callback)
 
 	local other_documents = get_other_documents(bufnr)
 
-	self.server.request_completion(
+	self.server:request_completion(
 		{
 			editor_language = filetype,
 			language = language,
