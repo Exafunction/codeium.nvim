@@ -523,7 +523,7 @@ end
 
 ---@param payload table
 function Server:chat_server_request(payload)
-	local body = { get_chat_message_request = { metadata = get_request_metadata(), chat_message = payload } }
+	local body = { get_chat_message_request = { metadata = get_request_metadata(), chat_messages = {payload} } }
 	local input_string = vim.fn.json_encode(body)
 	print("request: " .. input_string)
 
