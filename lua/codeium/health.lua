@@ -2,10 +2,14 @@ local Server = require "codeium.api"
 
 local M = {}
 
+---@diagnostic disable-next-line: deprecated
 local start = vim.health.start or vim.health.report_start
+---@diagnostic disable-next-line: deprecated
 local ok = vim.health.ok or vim.health.report_ok
 local warn = vim.health.warn or vim.health.report_warn
+---@diagnostic disable-next-line: deprecated
 local error = vim.health.error or vim.health.report_error
+---@diagnostic disable-next-line: deprecated
 local info = vim.health.info or vim.health.report_info
 local health_logger = { ok = ok, info = info, warn = warn, error = error }
 

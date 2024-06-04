@@ -187,6 +187,8 @@ function Server:new()
       logger.warn "Server is unhealthy"
     end
 
+    logger.info("Language Server binary: " .. update.get_bin_info().bin)
+
     if last_heartbeat == nil then
       logger.warn "No heartbeat executed"
     else
