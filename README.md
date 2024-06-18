@@ -130,7 +130,7 @@ cmp.setup({
 
 ## Troubleshooting
 
-The plugin log is written to `~/.cache/nvim/codeium.log`.
+The plugin log is written to `~/.cache/nvim/codeium.log` or `~/.cache/nvim/codeium/codeium.log.log` depending on the platform.
 
 You can set the logging level to one of `trace`, `debug`, `info`, `warn`,
 `error` by exporting the `DEBUG_CODEIUM` environment variable.
