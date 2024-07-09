@@ -4,8 +4,10 @@ local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
-local util = require("codeium.util")
 local api_key = nil
+local status = {
+	api_key_error = nil,
+}
 
 local function find_port(manager_dir, start_time)
 	local files = io.readdir(manager_dir)
@@ -39,20 +41,30 @@ end
 local Server = {}
 Server.__index = Server
 
+function Server.check_status()
+	return status
+end
+
 function Server.load_api_key()
 	local json, err = io.read_json(config.options.config_path)
 	if err or type(json) ~= "table" then
 		if err == "ENOENT" then
 			-- Allow any UI plugins to load
+			local message = "please log in with :Codeium Auth"
+			status.api_key_error = message
 			vim.defer_fn(function()
-				notify.info("please log in with :Codeium Auth")
+				notify.info(message)
 			end, 100)
 		else
-			notify.info("failed to load the api key")
+			local message = "failed to load the api key"
+			status.api_key_error = message
+			notify.info(message)
 		end
 		api_key = nil
 		return
 	end
+
+	status.api_key_error = nil
 	api_key = json.api_key
 end
 
@@ -60,8 +72,12 @@ function Server.save_api_key()
 	local _, result = io.write_json(config.options.config_path, {
 		api_key = api_key,
 	})
+	status.api_key_error = nil
+
 	if result then
-		notify.error("failed to save the api key", result)
+		local message = "failed to save the api key"
+		status.api_key_error = message
+		notify.error(message, result)
 	end
 end
 
@@ -145,6 +161,8 @@ function Server:new()
 	local current_cookie = nil
 	local workspaces = {}
 	local healthy = false
+	local last_heartbeat = nil
+	local last_heartbeat_error = nil
 
 	local function request(fn, payload, callback)
 		local url = "http://127.0.0.1:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
@@ -158,8 +176,11 @@ function Server:new()
 		request("Heartbeat", {
 			metadata = get_request_metadata(),
 		}, function(_, err)
+			last_heartbeat = os.time()
+			last_heartbeat_error = nil
 			if err then
 				notify.warn("heartbeat failed", err)
+				last_heartbeat_error = err
 			else
 				healthy = true
 			end
@@ -168,6 +189,28 @@ function Server:new()
 
 	function m.is_healthy()
 		return healthy
+	end
+
+	function m.checkhealth(logger)
+		logger.info("Checking server status")
+		if m.is_healthy() then
+			logger.ok("Server is healthy on port: " .. port)
+		else
+			logger.warn("Server is unhealthy")
+		end
+
+		logger.info("Language Server binary: " .. update.get_bin_info().bin)
+
+		if last_heartbeat == nil then
+			logger.warn("No heartbeat executed")
+		else
+			logger.info("Last heartbeat: " .. os.date("%D %H:%M:%S", last_heartbeat))
+			if last_heartbeat_error ~= nil then
+				logger.error(last_heartbeat_error)
+			else
+				logger.ok("Heartbeat ok")
+			end
+		end
 	end
 
 	function m.start()
