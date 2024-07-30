@@ -149,7 +149,7 @@ function Server.authenticate()
 	prompt()
 end
 
-function Server:new()
+function Server:new(options)
 	local m = {}
 	setmetatable(m, self)
 
@@ -374,6 +374,14 @@ function Server:new()
 				if err.status == 503 or err.status == 408 then
 					-- Service Unavailable or Timeout error
 					return complete(false, nil)
+				end
+
+				-- Ignore user defined errors
+				for _,ignored in pairs(options.ignored_errors or {}) do
+					if err.status == ignored then
+						log.warn("completion request failed", err.status)
+						return complete(false, nil)
+					end
 				end
 
 				local ok, json = pcall(vim.fn.json_decode, err.response.body)
