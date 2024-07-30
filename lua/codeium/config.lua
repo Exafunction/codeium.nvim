@@ -22,6 +22,7 @@ function M.defaults()
 		enable_local_search = false,
 		enable_index_service = false,
 		search_max_workspace_file_count = 5000,
+		ignored_errors = nil,
 	}
 end
 

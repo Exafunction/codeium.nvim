@@ -7,7 +7,7 @@ function M.setup(options)
 	local health = require("codeium.health")
 	require("codeium.config").setup(options)
 
-	local s = Server:new()
+	local s = Server:new(options)
 	update.download(function(err)
 		if not err then
 			Server.load_api_key()
