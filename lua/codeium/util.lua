@@ -18,20 +18,24 @@ function M.get_editor_options(bufnr)
 
 	return {
 		tab_size = M.fallback_call({
-			{ vim.api.nvim_buf_get_option, bufnr,       "shiftwidth" },
-			{ vim.api.nvim_buf_get_option, bufnr,       "tabstop" },
-			{ vim.api.nvim_get_option,     "shiftwidth" },
-			{ vim.api.nvim_get_option,     "tabstop" },
+			{ vim.api.nvim_get_option_value, "shiftwidth", { buf = bufnr, } },
+			{ vim.api.nvim_get_option_value, "tabstop",    { buf = bufnr, } },
+			{ vim.api.nvim_get_option_value, "shiftwidth" },
+			{ vim.api.nvim_get_option_value, "tabstop" },
 		}, greater_than_zero, 4),
 		insert_spaces = M.fallback_call({
-			{ vim.api.nvim_buf_get_option, bufnr,      "expandtab" },
-			{ vim.api.nvim_get_option,     "expandtab" },
+			{ vim.api.nvim_get_option_value, "expandtab", { buf = bufnr, } },
+			{ vim.api.nvim_get_option_value, "expandtab" },
 		}, nil, true),
 	}
 end
 
 function M.get_newline(bufnr)
 	return enums.line_endings[vim.bo[bufnr].fileformat] or "\n"
+end
+
+function M.get_relative_path(bufnr)
+	return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":")
 end
 
 return M
