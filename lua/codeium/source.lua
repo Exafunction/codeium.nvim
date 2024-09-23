@@ -182,11 +182,14 @@ function Source:complete(params, callback)
 
 	self.server.request_completion(
 		{
+			text = text,
 			editor_language = filetype,
 			language = language,
-			cursor_offset = cursor_offset,
-			text = text,
+			curson_position = { row = cursor.row, col = cursor.col },
+			absolute_path = vim.api.nvim_buf_get_name(bufnr),
+			relative_path = util.get_relative_path(bufnr),
 			line_ending = line_ending,
+			cursor_offset = cursor_offset,
 		},
 		editor_options,
 		other_documents,
