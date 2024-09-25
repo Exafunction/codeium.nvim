@@ -185,7 +185,7 @@ function Source:complete(params, callback)
 			text = text,
 			editor_language = filetype,
 			language = language,
-			cursor_position = { row = cursor.row, col = cursor.col },
+			cursor_position = { row = cursor.row - 1, col = cursor.col - 1 },
 			absolute_uri = 'file://' .. vim.api.nvim_buf_get_name(bufnr),
 			workspace_uri = 'file://' .. util.get_relative_path(bufnr),
 			line_ending = line_ending,
@@ -205,6 +205,7 @@ function Source:complete(params, callback)
 			end
 		end
 	)
+
 end
 
 return Source
