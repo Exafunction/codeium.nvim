@@ -1,4 +1,5 @@
 local enums = require("codeium.enums")
+local io = require("codeium.io")
 local M = {}
 
 function M.fallback_call(calls, with_filter, fallback_value)
@@ -36,6 +37,14 @@ end
 
 function M.get_relative_path(bufnr)
 	return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":")
+end
+
+function M.get_uri(path)
+	local info = io.get_system_info()
+	if info.is_windows then
+		path = path:gsub("\\", "/")
+	end
+	return "file://" .. path
 end
 
 return M
