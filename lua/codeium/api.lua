@@ -4,6 +4,9 @@ local io = require("codeium.io")
 local log = require("codeium.log")
 local update = require("codeium.update")
 local notify = require("codeium.notify")
+local util = require("codeium.util")
+local enums = require("codeium.enums")
+
 local api_key = nil
 local status = {
 	api_key_error = nil,
@@ -265,6 +268,8 @@ function Server:new()
 			api_server_url,
 			"--manager_dir",
 			manager_dir,
+			"--file_watch_max_dir_count",
+			config.options.file_watch_max_dir_count,
 			enable_handlers = true,
 			enable_recording = false,
 			on_exit = on_exit,
@@ -417,6 +422,41 @@ function Server:new()
 		}, noop)
 	end
 
+	function m.refresh_context()
+		-- bufnr for current buffer is 0
+		local bufnr = 0
+
+		local line_ending = util.get_newline(bufnr)
+		local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
+
+		-- Ensure that there is always a newline at the end of the file
+		table.insert(lines, "")
+		local text = table.concat(lines, line_ending)
+
+		local filetype = vim.bo.filetype
+		local language = enums.languages[filetype] or enums.languages.unspecified
+
+		local doc = {
+			editor_language = filetype,
+			language = language,
+			cursor_offset = 0,
+			text = text,
+			line_ending = line_ending,
+			absolute_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p"),
+			relative_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":"),
+		}
+
+		request("RefreshContextForIdeAction", {
+			active_document = doc,
+		}, function(_, err)
+			if err then
+				notify.error("failed refresh context: " .. err.out)
+				return
+			end
+		end
+		)
+	end
+
 	function m.add_workspace()
 		local project_root = vim.fn.getcwd()
 		-- workspace already tracked by server
@@ -430,7 +470,7 @@ function Server:new()
 			end
 		end
 
-		request("AddTrackedWorkspace", { workspace = project_root, metadata = get_request_metadata() }, function(_, err)
+		request("AddTrackedWorkspace", { workspace = project_root }, function(_, err)
 			if err then
 				notify.error("failed to add workspace: " .. err.out)
 				return
@@ -475,7 +515,7 @@ function Server:new()
 			elseif os_info.os == "macos" then
 				os.execute("open '" .. url .. "'")
 			elseif os_info.os == "windows" then
-				os.execute(string.format('start "" "%s"', url))
+				os.execute("start " .. url)
 			else
 				notify.error("Unsupported operating system")
 			end
