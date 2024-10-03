@@ -66,7 +66,8 @@ After installation and configuration, you will need to authenticate with
 Codeium. This can be done by running `:Codeium Auth`, copying the token from
 your browser and pasting it into API token request.
 
-To use Codeium Chat, execute the `:Codeium Chat` command. The chat will be opened
+To use Codeium Chat, execute the `:Codeium Chat` command (this feature is only
+available when chat is enabled in the [configuration](#options)). The chat will be opened
 in your default browser using the xdg-open command.
 
 ## Options
