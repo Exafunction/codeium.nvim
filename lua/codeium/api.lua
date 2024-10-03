@@ -515,7 +515,7 @@ function Server:new()
 			elseif os_info.os == "macos" then
 				os.execute("open '" .. url .. "'")
 			elseif os_info.os == "windows" then
-				os.execute("start " .. url)
+				os.execute(string.format('start "" "%s"', url))
 			else
 				notify.error("Unsupported operating system")
 			end

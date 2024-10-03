@@ -84,7 +84,7 @@ local function buf_to_codeium(bufnr)
 		language = language,
 		text = text,
 		line_ending = line_ending,
-		absolute_path = vim.api.nvim_buf_get_name(bufnr),
+		absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
 	}
 end
 
@@ -182,11 +182,14 @@ function Source:complete(params, callback)
 
 	self.server.request_completion(
 		{
+			text = text,
 			editor_language = filetype,
 			language = language,
-			cursor_offset = cursor_offset,
-			text = text,
+			cursor_position = { row = cursor.row - 1, col = cursor.col - 1 },
+			absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
+			workspace_uri = util.get_uri(util.get_relative_path(bufnr)),
 			line_ending = line_ending,
+			cursor_offset = cursor_offset,
 		},
 		editor_options,
 		other_documents,
