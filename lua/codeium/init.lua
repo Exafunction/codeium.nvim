@@ -22,6 +22,7 @@ function M.setup(options)
 			Server.authenticate()
 		end
 		if args[1] == "Chat" then
+			s.refresh_context()
 			s.get_chat_ports()
 			s.add_workspace()
 		end
