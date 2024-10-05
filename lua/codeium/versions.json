@@ -1,11 +1,11 @@
 {
-  "version": "1.20.6",
-  "stamp": "dd81543b73fa3cadf1eabeaa10cf6051b38369d4",
+  "version": "1.20.9",
+  "stamp": "2deb37376016b8eb5f2895a7b7a5f46aa57fb6d6",
   "hashes": {
-    "x86_64-linux": "sha256-pBFR9cas0B5dnudr2LMWs3iAvgKldZriE+K4HOd9IEg=",
-    "aarch64-linux": "sha256-wL22NreU4pmFjqYCSZB0rEVmb8LA5UAArxfTslK+eQI=",
-    "x86_64-darwin": "sha256-PzBDAKetv6nQWK40Vnyn9HKQnN2VwKXjdjPJAYDtW7k=",
-    "aarch64-darwin": "sha256-9FrevgqZWXsMJxgxKe35nhaoJLMFqb3Y1FeKCT3VaKY=",
-    "x86_64-windows": "sha256-JAqleDt1FZeaEKPp76YI2nkQ4nA8/h7+bi1UkQRH0R4="
+    "x86_64-linux": "sha256-3BZ1Nug8updRc/WLFLlyPf02cuCCkOYBCc1Osr3Lv/I=",
+    "aarch64-linux": "sha256-IoR0qm95QgY0ZHRz5ulDu3U8xdyXwnYRRtFqoQrvtVo=",
+    "x86_64-darwin": "sha256-EsCkIzGzDAayNLs01HYitTD6I1nV9gjDA/uuyvEAmDQ=",
+    "aarch64-darwin": "sha256-nHFVklzmaMTLzl0vFEVrwzDAjA2CFAjBbSGmXK33Xkk=",
+    "x86_64-windows": "sha256-i3q6Wus1Ug+Ll7LEdXqbcuoqm80vVpA/XMSg5/L8Atg="
   }
 }

@@ -43,6 +43,7 @@ function M.get_uri(path)
 	local info = io.get_system_info()
 	if info.is_windows then
 		path = path:gsub("\\", "/")
+		return "file:///" .. path
 	end
 	return "file://" .. path
 end
