@@ -10,6 +10,7 @@ local request_nonce = 0
 local using_codeium_status = 0
 
 local completions
+local idle_timer
 
 local server = nil
 local options
@@ -41,7 +42,9 @@ function M.setup(_server, _options)
 
 	vim.api.nvim_create_autocmd("InsertLeave", {
 		group = augroup,
-		callback = M.Clear,
+		callback = function()
+			M.Clear()
+		end,
 	})
 
 	vim.api.nvim_create_autocmd("BufLeave", {
@@ -52,6 +55,16 @@ function M.setup(_server, _options)
 			end
 		end,
 	})
+
+	-- TODO make these configurable
+	vim.keymap.set("i", "<C-]>", M.Clear, { silent = true })
+	vim.keymap.set("i", "<M-]>", function()
+		M.CycleCompletions(1)
+	end, { silent = true })
+	vim.keymap.set("i", "<M-[>", function()
+		M.CycleCompletions(-1)
+	end, { silent = true })
+	vim.keymap.set("i", "<c-]>", M.Accept, { silent = true, expr = true, script = true, nowait = true })
 
 	-- vim.api.nvim_create_autocmd({ "ColorScheme", "VimEnter" }, {
 	-- 	group = augroup,
@@ -77,11 +90,13 @@ end
 local function CompletionInserter(current_completion, insert_text)
 	local default = vim.g.codeium_tab_fallback or (vim.fn.pumvisible() == 1 and "<C-N>" or "\t")
 
-	if not (vim.fn.mode():match("^[iR]") and completions) then
+	if not (vim.fn.mode():match("^[iR]")) then
+		print("bad mode " .. vim.fn.mode())
 		return default
 	end
 
 	if current_completion == nil then
+		print("no current completion")
 		return default
 	end
 
@@ -104,17 +119,19 @@ local function CompletionInserter(current_completion, insert_text)
 		delete_range = ' <Esc>"_x0"_d' .. delete_chars .. "li"
 	end
 
-	local insert_text = '<C-R><C-O>=v:lua.require"codeium".CompletionText()<CR>'
+	local insert_text = '<C-R><C-O>=v:lua.require("codeium.virtual_text").CompletionText()<CR>'
 	M.completion_text = text
 
 	local cursor_text = delta == 0 and "" or '<C-O>:exe "go" line2byte(line("."))+col(".")+(' .. delta .. ")<CR>"
 
 	server.accept_completion(current_completion.completion.completionId)
 
+	print("output: " .. delete_range .. insert_text .. cursor_text)
 	return delete_range .. insert_text .. cursor_text
 end
 
 function M.Accept()
+	print("Accept")
 	local current_completion = M.GetCurrentCompletionItem()
 	return CompletionInserter(current_completion, current_completion and current_completion.completion.text or "")
 end
@@ -138,9 +155,6 @@ function M.AcceptNextLine()
 end
 
 function M.GetCurrentCompletionItem()
-	print("GetCurrentCompletionItem")
-	print(vim.inspect(completions))
-	print("abc")
 	if completions and completions.items and completions.index and completions.index < #completions.items then
 		return completions.items[completions.index + 1]
 	end
@@ -170,9 +184,6 @@ local function RenderCurrentCompletion()
 	if current_completion == nil then
 		return ""
 	end
-
-	print("current_completion")
-	print(vim.inspect(current_completion))
 
 	local parts = current_completion.completionParts or {}
 
@@ -229,7 +240,7 @@ local function RenderCurrentCompletion()
 			end
 		end
 
-		local priority = vim.b.codeium_virtual_text_priority or vim.g.codeium_virtual_text_priority or 65535
+		local priority = config.options.virtual_text.priority
 		local _virtcol = vim.fn.virtcol({ row, _col + diff })
 		local data = { id = idx + 1, hl_mode = "combine", virt_text_win_col = _virtcol - 1, priority = priority }
 		if part.type == "COMPLETION_PART_TYPE_INLINE_MASK" then
@@ -258,9 +269,9 @@ function M.Clear(...)
 	vim.b._codeium_status = 0
 	-- TODO enable
 	-- M.RedrawStatusLine()
-	if vim.g._codeium_timer then
-		vim.fn.timer_stop(vim.g._codeium_timer)
-		vim.g._codeium_timer = nil
+	if idle_timer then
+		vim.fn.timer_stop(idle_timer)
+		idle_timer = nil
 	end
 
 	if completions then
@@ -330,20 +341,20 @@ function M.Complete(...)
 	if select("#", ...) == 2 then
 		local bufnr, timer = ...
 
-		if timer ~= vim.g._codeium_timer then
+		if timer ~= idle_timer then
 			return
 		end
 
-		vim.g._codeium_timer = nil
+		idle_timer = nil
 
 		if vim.fn.mode() ~= "i" or bufnr ~= vim.fn.bufnr("") then
 			return
 		end
 	end
 
-	if vim.g._codeium_timer then
-		vim.fn.timer_stop(vim.g._codeium_timer)
-		vim.g._codeium_timer = nil
+	if idle_timer then
+		vim.fn.timer_stop(idle_timer)
+		idle_timer = nil
 	end
 
 	if vim.o.encoding ~= "latin1" and vim.o.encoding ~= "utf-8" then
@@ -411,8 +422,8 @@ function M.DebouncedComplete()
 		return
 	end
 	local current_buf = vim.fn.bufnr("")
-	vim.g._codeium_timer = vim.fn.timer_start(options.idle_delay, function()
-		M.Complete(current_buf, vim.g._codeium_timer)
+	idle_timer = vim.fn.timer_start(options.idle_delay, function()
+		M.Complete(current_buf, idle_timer)
 	end)
 end
 
