@@ -28,6 +28,15 @@ function M.defaults()
 			enabled = false,
 			idle_delay = 75,
 			virtual_text_priority = 65535,
+			map_keys = true,
+			key_bindings = {
+				accept = "<Tab>",
+				accept_word = nil,
+				accept_line = nil,
+				clear = "<C-[>",
+				next = "<M-]>",
+				prev = "<M-[>",
+			},
 		},
 		workspace_root = {
 			use_lsp = true,

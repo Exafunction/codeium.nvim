@@ -1,6 +1,5 @@
 local enums = require("codeium.enums")
 local util = require("codeium.util")
-local notify = require("codeium.notify")
 local config = require("codeium.config")
 
 local M = {}
@@ -27,7 +26,7 @@ function M.setup(_server, _options)
 	vim.api.nvim_create_autocmd({ "InsertEnter", "CursorMovedI", "CompleteChanged" }, {
 		group = augroup,
 		callback = function()
-			M.DebouncedComplete()
+			M.debounced_complete()
 		end,
 	})
 
@@ -35,7 +34,7 @@ function M.setup(_server, _options)
 		group = augroup,
 		callback = function()
 			if vim.fn.mode():match("^[iR]") then
-				M.DebouncedComplete()
+				M.debounced_complete()
 			end
 		end,
 	})
@@ -43,7 +42,7 @@ function M.setup(_server, _options)
 	vim.api.nvim_create_autocmd("InsertLeave", {
 		group = augroup,
 		callback = function()
-			M.Clear()
+			M.clear()
 		end,
 	})
 
@@ -51,20 +50,53 @@ function M.setup(_server, _options)
 		group = augroup,
 		callback = function()
 			if vim.fn.mode():match("^[iR]") then
-				M.Clear()
+				M.clear()
 			end
 		end,
 	})
 
-	-- TODO make these configurable
-	vim.keymap.set("i", "<C-]>", M.Clear, { silent = true })
-	vim.keymap.set("i", "<M-]>", function()
-		M.CycleCompletions(1)
-	end, { silent = true })
-	vim.keymap.set("i", "<M-[>", function()
-		M.CycleCompletions(-1)
-	end, { silent = true })
-	vim.keymap.set("i", "<c-]>", M.Accept, { silent = true, expr = true, script = true, nowait = true })
+	if config.options.virtual_text.map_keys then
+		bindings = config.options.virtual_text.key_bindings
+		if bindings.clear then
+			vim.keymap.set("i", bindings.accept, function()
+				M.clear()
+			end, { silent = true })
+		end
+
+		if bindings.next then
+			vim.keymap.set("i", bindings.next, function()
+				M.cycle_completions(1)
+			end, { silent = true })
+		end
+
+		if bindings.prev then
+			vim.keymap.set("i", bindings.prev, function()
+				M.cycle_completions(-1)
+			end, { silent = true })
+		end
+
+		if bindings.accept then
+			vim.keymap.set("i", bindings.accept, M.accept, { silent = true, expr = true, script = true, nowait = true })
+		end
+
+		if bindings.accept_word then
+			vim.keymap.set(
+				"i",
+				bindings.accept_word,
+				M.accept_next_word,
+				{ silent = true, expr = true, script = true, nowait = true }
+			)
+		end
+
+		if bindings.accept_line then
+			vim.keymap.set(
+				"i",
+				bindings.accept_line,
+				M.accept_next_line,
+				{ silent = true, expr = true, script = true, nowait = true }
+			)
+		end
+	end
 
 	-- vim.api.nvim_create_autocmd({ "ColorScheme", "VimEnter" }, {
 	-- 	group = augroup,
@@ -72,31 +104,22 @@ function M.setup(_server, _options)
 	-- 		vim.fn["s:SetStyle"]()
 	-- 	end,
 	-- })
-
-	-- vim.api.nvim_create_autocmd("VimEnter", {
-	-- 	group = augroup,
-	-- 	callback = function()
-	-- 		vim.fn["s:MapTab"]()
-	-- 	end,
-	-- })
 end
 
-function M.CompletionText()
+function M.get_completion_text()
 	local completion_text = M.completion_text
 	M.completion_text = nil
 	return completion_text or ""
 end
 
-local function CompletionInserter(current_completion, insert_text)
+local function completion_inserter(current_completion, insert_text)
 	local default = vim.g.codeium_tab_fallback or (vim.fn.pumvisible() == 1 and "<C-N>" or "\t")
 
 	if not (vim.fn.mode():match("^[iR]")) then
-		print("bad mode " .. vim.fn.mode())
 		return default
 	end
 
 	if current_completion == nil then
-		print("no current completion")
 		return default
 	end
 
@@ -119,25 +142,23 @@ local function CompletionInserter(current_completion, insert_text)
 		delete_range = ' <Esc>"_x0"_d' .. delete_chars .. "li"
 	end
 
-	local insert_text = '<C-R><C-O>=v:lua.require("codeium.virtual_text").CompletionText()<CR>'
+	local insert_text = '<C-R><C-O>=v:lua.require("codeium.virtual_text").get_completion_text()<CR>'
 	M.completion_text = text
 
 	local cursor_text = delta == 0 and "" or '<C-O>:exe "go" line2byte(line("."))+col(".")+(' .. delta .. ")<CR>"
 
 	server.accept_completion(current_completion.completion.completionId)
 
-	print("output: " .. delete_range .. insert_text .. cursor_text)
 	return delete_range .. insert_text .. cursor_text
 end
 
-function M.Accept()
-	print("Accept")
-	local current_completion = M.GetCurrentCompletionItem()
-	return CompletionInserter(current_completion, current_completion and current_completion.completion.text or "")
+function M.accept()
+	local current_completion = M.get_current_completion_item()
+	return completion_inserter(current_completion, current_completion and current_completion.completion.text or "")
 end
 
-function M.AcceptNextWord()
-	local current_completion = M.GetCurrentCompletionItem()
+function M.accept_next_word()
+	local current_completion = M.get_current_completion_item()
 	local completion_parts = current_completion and (current_completion.completionParts or {}) or {}
 	if #completion_parts == 0 then
 		return ""
@@ -145,16 +166,16 @@ function M.AcceptNextWord()
 	local prefix_text = completion_parts[1].prefix or ""
 	local completion_text = completion_parts[1].text or ""
 	local next_word = completion_text:match("^%W*%w*")
-	return CompletionInserter(current_completion, prefix_text .. next_word)
+	return completion_inserter(current_completion, prefix_text .. next_word)
 end
 
-function M.AcceptNextLine()
-	local current_completion = M.GetCurrentCompletionItem()
+function M.accept_next_line()
+	local current_completion = M.get_current_completion_item()
 	local text = current_completion and current_completion.completion.text:gsub("\n.*$", "") or ""
-	return CompletionInserter(current_completion, text)
+	return completion_inserter(current_completion, text)
 end
 
-function M.GetCurrentCompletionItem()
+function M.get_current_completion_item()
 	if completions and completions.items and completions.index and completions.index < #completions.items then
 		return completions.items[completions.index + 1]
 	end
@@ -180,7 +201,7 @@ local function RenderCurrentCompletion()
 		return ""
 	end
 
-	local current_completion = M.GetCurrentCompletionItem()
+	local current_completion = M.get_current_completion_item()
 	if current_completion == nil then
 		return ""
 	end
@@ -264,8 +285,7 @@ local function RenderCurrentCompletion()
 	end
 end
 
-function M.Clear(...)
-	print("Clear")
+function M.clear(...)
 	vim.b._codeium_status = 0
 	-- TODO enable
 	-- M.RedrawStatusLine()
@@ -290,8 +310,8 @@ function M.Clear(...)
 	return ""
 end
 
-function M.CycleCompletions(n)
-	if M.GetCurrentCompletionItem() == nil then
+function M.cycle_completions(n)
+	if M.get_current_completion_item() == nil then
 		return
 	end
 
@@ -337,7 +357,7 @@ function M.get_document(buf_id, cur_line, cur_col)
 	return doc
 end
 
-function M.Complete(...)
+function M.complete(...)
 	if select("#", ...) == 2 then
 		local bufnr, timer = ...
 
@@ -389,7 +409,6 @@ function M.Complete(...)
 
 	vim.b._codeium_status = 1
 
-	print("requesting")
 	server.request_completion(data.document, data.editor_options, data.other_documents, function(success, json)
 		if not success then
 			return
@@ -407,31 +426,29 @@ end
 
 function M.handle_completions(completion_items)
 	if not completions then
-		print("completions was cleared")
 		return
 	end
-	print(vim.inspect(completion_items))
 	completions.items = completion_items
 	completions.index = 0
 	RenderCurrentCompletion()
 end
 
-function M.DebouncedComplete()
-	M.Clear()
+function M.debounced_complete()
+	M.clear()
 	if vim.g.codeium_manual or not server.is_healthy() then
 		return
 	end
 	local current_buf = vim.fn.bufnr("")
 	idle_timer = vim.fn.timer_start(options.idle_delay, function()
-		M.Complete(current_buf, idle_timer)
+		M.complete(current_buf, idle_timer)
 	end)
 end
 
-function M.CycleOrComplete()
-	if M.GetCurrentCompletionItem() == nil then
-		M.Complete()
+function M.cycle_or_complete()
+	if M.get_current_completion_item() == nil then
+		M.complete()
 	else
-		M.CycleCompletions(1)
+		M.cycle_completions(1)
 	end
 end
 
