@@ -26,6 +26,7 @@ function M.defaults()
 		enable_cmp_source = true,
 		virtual_text = {
 			enabled = false,
+			manual = false,
 			idle_delay = 75,
 			virtual_text_priority = 65535,
 			map_keys = true,

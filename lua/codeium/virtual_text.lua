@@ -1,6 +1,7 @@
-local enums = require("codeium.enums")
-local util = require("codeium.util")
 local config = require("codeium.config")
+local enums = require("codeium.enums")
+local notify = require("codeium.notify")
+local util = require("codeium.util")
 
 local M = {}
 
@@ -295,10 +296,8 @@ function M.clear(...)
 	end
 
 	if completions then
-		local request_id = completions.request_id or 0
-		if request_id > 0 then
-			-- TODO: Implement codeium#server#Request
-			-- codeium#server#Request('CancelRequest', {request_id = request_id})
+		if completions.cancel then
+			completions.cancel()
 		end
 		RenderCurrentCompletion()
 		completions = nil
@@ -327,6 +326,7 @@ function M.cycle_completions(n)
 	RenderCurrentCompletion()
 end
 
+local warn_filetype_missing = true
 function M.get_document(buf_id, cur_line, cur_col)
 	local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
 	if vim.bo[buf_id].eol then
@@ -335,9 +335,9 @@ function M.get_document(buf_id, cur_line, cur_col)
 
 	local filetype = vim.bo[buf_id].filetype:gsub("%..*", "")
 	local language = enums.filetype_aliases[filetype == "" and "text" or filetype] or filetype
-	if filetype == "" and vim.g.codeium_warn_filetype_missing ~= false then
-		-- Call your warning function here
-		vim.g.codeium_warn_filetype_missing = false
+	if filetype == "" and warn_filetype_missing ~= false then
+		notify.warn("No filetype detected. This will affect completion quality.")
+		warn_filetype_missing = false
 	end
 	local editor_language = vim.bo[buf_id].filetype == "" and "unspecified" or vim.bo[buf_id].filetype
 
@@ -409,16 +409,25 @@ function M.complete(...)
 
 	vim.b._codeium_status = 1
 
-	server.request_completion(data.document, data.editor_options, data.other_documents, function(success, json)
-		if not success then
-			return
-		end
+	local cancel = server.request_completion(
+		data.document,
+		data.editor_options,
+		data.other_documents,
+		function(success, json)
+			if completions.request_id == request_id then
+				completions.cancel = nil
+			end
+			if not success then
+				return
+			end
 
-		if json and json.state and json.state.state == "CODEIUM_STATE_SUCCESS" and json.completionItems then
-			M.handle_completions(json.completionItems)
+			if json and json.state and json.state.state == "CODEIUM_STATE_SUCCESS" and json.completionItems then
+				M.handle_completions(json.completionItems)
+			end
 		end
-	end)
+	)
 	completions = {
+		cancel = cancel,
 		request_data = request_data,
 		request_id = request_id,
 	}
@@ -435,7 +444,7 @@ end
 
 function M.debounced_complete()
 	M.clear()
-	if vim.g.codeium_manual or not server.is_healthy() then
+	if config.options.virtual_text.manual or not server.is_healthy() then
 		return
 	end
 	local current_buf = vim.fn.bufnr("")
