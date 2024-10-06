@@ -91,4 +91,31 @@ function M.get_uri(path)
 	return "file://" .. path
 end
 
+local function buf_to_codeium(bufnr)
+	local filetype = enums.filetype_aliases[vim.bo[bufnr].filetype] or vim.bo[bufnr].filetype or "text"
+	local language = enums.languages[filetype] or enums.languages.unspecified
+	local line_ending = M.get_newline(bufnr)
+	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
+	table.insert(lines, "")
+	local text = table.concat(lines, line_ending)
+	return {
+		editor_language = filetype,
+		language = language,
+		text = text,
+		line_ending = line_ending,
+		absolute_uri = M.get_uri(vim.api.nvim_buf_get_name(bufnr)),
+	}
+end
+
+function M.get_other_documents(bufnr)
+	local other_documents = {}
+
+	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype ~= "" and buf ~= bufnr then
+			table.insert(other_documents, buf_to_codeium(buf))
+		end
+	end
+	return other_documents
+end
+
 return M

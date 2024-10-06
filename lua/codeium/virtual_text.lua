@@ -1,0 +1,427 @@
+local enums = require("codeium.enums")
+local util = require("codeium.util")
+local notify = require("codeium.notify")
+local config = require("codeium.config")
+
+local M = {}
+
+local hlgroup = "CodeiumSuggestion"
+local request_nonce = 0
+local using_codeium_status = 0
+
+local completions
+
+local server = nil
+local options
+function M.setup(_server, _options)
+	server = _server
+	options = _options
+
+	local augroup = vim.api.nvim_create_augroup("codeium_virtual_text", { clear = true })
+
+	if not options.enabled then
+		return
+	end
+
+	vim.api.nvim_create_autocmd({ "InsertEnter", "CursorMovedI", "CompleteChanged" }, {
+		group = augroup,
+		callback = function()
+			M.DebouncedComplete()
+		end,
+	})
+
+	vim.api.nvim_create_autocmd("BufEnter", {
+		group = augroup,
+		callback = function()
+			if vim.fn.mode():match("^[iR]") then
+				M.DebouncedComplete()
+			end
+		end,
+	})
+
+	vim.api.nvim_create_autocmd("InsertLeave", {
+		group = augroup,
+		callback = M.Clear,
+	})
+
+	vim.api.nvim_create_autocmd("BufLeave", {
+		group = augroup,
+		callback = function()
+			if vim.fn.mode():match("^[iR]") then
+				M.Clear()
+			end
+		end,
+	})
+
+	-- vim.api.nvim_create_autocmd({ "ColorScheme", "VimEnter" }, {
+	-- 	group = augroup,
+	-- 	callback = function()
+	-- 		vim.fn["s:SetStyle"]()
+	-- 	end,
+	-- })
+
+	-- vim.api.nvim_create_autocmd("VimEnter", {
+	-- 	group = augroup,
+	-- 	callback = function()
+	-- 		vim.fn["s:MapTab"]()
+	-- 	end,
+	-- })
+end
+
+function M.CompletionText()
+	local completion_text = M.completion_text
+	M.completion_text = nil
+	return completion_text or ""
+end
+
+local function CompletionInserter(current_completion, insert_text)
+	local default = vim.g.codeium_tab_fallback or (vim.fn.pumvisible() == 1 and "<C-N>" or "\t")
+
+	if not (vim.fn.mode():match("^[iR]") and completions) then
+		return default
+	end
+
+	if current_completion == nil then
+		return default
+	end
+
+	local range = current_completion.range
+	local suffix = current_completion.suffix or {}
+	local suffix_text = suffix.text or ""
+	local delta = suffix.deltaCursorOffset or 0
+	local start_offset = range.startOffset or 0
+	local end_offset = range.endOffset or 0
+
+	local text = insert_text .. suffix_text
+	if text == "" then
+		return default
+	end
+
+	local delete_range = ""
+	if end_offset - start_offset > 0 then
+		local delete_bytes = end_offset - start_offset
+		local delete_chars = vim.fn.strchars(vim.fn.strpart(vim.fn.getline("."), 0, delete_bytes))
+		delete_range = ' <Esc>"_x0"_d' .. delete_chars .. "li"
+	end
+
+	local insert_text = '<C-R><C-O>=v:lua.require"codeium".CompletionText()<CR>'
+	M.completion_text = text
+
+	local cursor_text = delta == 0 and "" or '<C-O>:exe "go" line2byte(line("."))+col(".")+(' .. delta .. ")<CR>"
+
+	server.accept_completion(current_completion.completion.completionId)
+
+	return delete_range .. insert_text .. cursor_text
+end
+
+function M.Accept()
+	local current_completion = M.GetCurrentCompletionItem()
+	return CompletionInserter(current_completion, current_completion and current_completion.completion.text or "")
+end
+
+function M.AcceptNextWord()
+	local current_completion = M.GetCurrentCompletionItem()
+	local completion_parts = current_completion and (current_completion.completionParts or {}) or {}
+	if #completion_parts == 0 then
+		return ""
+	end
+	local prefix_text = completion_parts[1].prefix or ""
+	local completion_text = completion_parts[1].text or ""
+	local next_word = completion_text:match("^%W*%w*")
+	return CompletionInserter(current_completion, prefix_text .. next_word)
+end
+
+function M.AcceptNextLine()
+	local current_completion = M.GetCurrentCompletionItem()
+	local text = current_completion and current_completion.completion.text:gsub("\n.*$", "") or ""
+	return CompletionInserter(current_completion, text)
+end
+
+function M.GetCurrentCompletionItem()
+	print("GetCurrentCompletionItem")
+	print(vim.inspect(completions))
+	print("abc")
+	if completions and completions.items and completions.index and completions.index < #completions.items then
+		return completions.items[completions.index + 1]
+	end
+	return nil
+end
+
+local nvim_extmark_ids = {}
+
+local function ClearCompletion()
+	local namespace = vim.api.nvim_create_namespace("codeium")
+	for _, id in ipairs(nvim_extmark_ids) do
+		vim.api.nvim_buf_del_extmark(0, namespace, id)
+	end
+	nvim_extmark_ids = {}
+end
+
+local function RenderCurrentCompletion()
+	ClearCompletion()
+	-- TODO enable
+	-- M.RedrawStatusLine()
+
+	if not vim.fn.mode():match("^[iR]") then
+		return ""
+	end
+
+	local current_completion = M.GetCurrentCompletionItem()
+	if current_completion == nil then
+		return ""
+	end
+
+	print("current_completion")
+	print(vim.inspect(current_completion))
+
+	local parts = current_completion.completionParts or {}
+
+	local inline_cumulative_cols = 0
+	local diff = 0
+	for idx, part in ipairs(parts) do
+		local row = (part.line or 0) + 1
+		if row ~= vim.fn.line(".") then
+			-- TODO: Implement codeium#log#Warn
+			-- codeium#log#Warn('Ignoring completion, line number is not the current line.')
+			goto continue
+		end
+		local _col
+		if part.type == "COMPLETION_PART_TYPE_INLINE" then
+			_col = inline_cumulative_cols + #(part.prefix or "") + 1
+			inline_cumulative_cols = _col - 1
+		else
+			_col = #(part.prefix or "") + 1
+		end
+		local text = part.text
+
+		if
+			(part.type == "COMPLETION_PART_TYPE_INLINE" and idx == 1)
+			or part.type == "COMPLETION_PART_TYPE_INLINE_MASK"
+		then
+			local completion_prefix = part.prefix or ""
+			local completion_line = completion_prefix .. text
+			local full_line = vim.fn.getline(row)
+			local cursor_prefix = full_line:sub(1, vim.fn.col(".") - 1)
+			local matching_prefix = 0
+			for i = 1, #completion_line do
+				if i <= #full_line and completion_line:sub(i, i) == full_line:sub(i, i) then
+					matching_prefix = matching_prefix + 1
+				else
+					break
+				end
+			end
+			if #cursor_prefix > #completion_prefix then
+				diff = #cursor_prefix - #completion_prefix
+			elseif #cursor_prefix < #completion_prefix then
+				if matching_prefix >= #completion_prefix then
+					diff = matching_prefix - #completion_prefix
+				else
+					diff = #cursor_prefix - #completion_prefix
+				end
+			end
+			if diff > 0 then
+				diff = 0
+			end
+			if diff < 0 then
+				text = completion_prefix:sub(diff + 1) .. text
+			elseif diff > 0 then
+				text = text:sub(diff + 1)
+			end
+		end
+
+		local priority = vim.b.codeium_virtual_text_priority or vim.g.codeium_virtual_text_priority or 65535
+		local _virtcol = vim.fn.virtcol({ row, _col + diff })
+		local data = { id = idx + 1, hl_mode = "combine", virt_text_win_col = _virtcol - 1, priority = priority }
+		if part.type == "COMPLETION_PART_TYPE_INLINE_MASK" then
+			data.virt_text = { { text, hlgroup } }
+		elseif part.type == "COMPLETION_PART_TYPE_BLOCK" then
+			local lines = vim.split(text, "\n", true)
+			if lines[#lines] == "" then
+				table.remove(lines)
+			end
+			data.virt_lines = vim.tbl_map(function(l)
+				return { { l, hlgroup } }
+			end, lines)
+		else
+			goto continue
+		end
+
+		table.insert(nvim_extmark_ids, data.id)
+		vim.api.nvim_buf_set_extmark(0, vim.api.nvim_create_namespace("codeium"), row - 1, 0, data)
+
+		::continue::
+	end
+end
+
+function M.Clear(...)
+	print("Clear")
+	vim.b._codeium_status = 0
+	-- TODO enable
+	-- M.RedrawStatusLine()
+	if vim.g._codeium_timer then
+		vim.fn.timer_stop(vim.g._codeium_timer)
+		vim.g._codeium_timer = nil
+	end
+
+	if completions then
+		local request_id = completions.request_id or 0
+		if request_id > 0 then
+			-- TODO: Implement codeium#server#Request
+			-- codeium#server#Request('CancelRequest', {request_id = request_id})
+		end
+		RenderCurrentCompletion()
+		completions = nil
+	end
+
+	if select("#", ...) == 0 then
+		RenderCurrentCompletion()
+	end
+	return ""
+end
+
+function M.CycleCompletions(n)
+	if M.GetCurrentCompletionItem() == nil then
+		return
+	end
+
+	completions.index = completions.index + n
+	local n_items = #completions.items
+
+	if completions.index < 0 then
+		completions.index = completions.index + n_items
+	end
+
+	completions.index = completions.index % n_items
+
+	RenderCurrentCompletion()
+end
+
+function M.get_document(buf_id, cur_line, cur_col)
+	local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+	if vim.bo[buf_id].eol then
+		table.insert(lines, "")
+	end
+
+	local filetype = vim.bo[buf_id].filetype:gsub("%..*", "")
+	local language = enums.filetype_aliases[filetype == "" and "text" or filetype] or filetype
+	if filetype == "" and vim.g.codeium_warn_filetype_missing ~= false then
+		-- Call your warning function here
+		vim.g.codeium_warn_filetype_missing = false
+	end
+	local editor_language = vim.bo[buf_id].filetype == "" and "unspecified" or vim.bo[buf_id].filetype
+
+	local doc = {
+		text = table.concat(lines, vim.api.nvim_get_option_value("ff", { buf = buf_id }) == "dos" and "\r\n" or "\n"),
+		editor_language = editor_language,
+		language = enums.languages[language] or enums.languages.unspecified,
+		cursor_position = { row = cur_line - 1, col = cur_col - 1 },
+		absolute_path_migrate_me_to_uri = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf_id), ":p"),
+	}
+
+	local line_ending = vim.api.nvim_get_option_value("ff", { buf = buf_id }) == "dos" and "\r\n" or "\n"
+	if line_ending then
+		doc.line_ending = line_ending
+	end
+
+	return doc
+end
+
+function M.Complete(...)
+	if select("#", ...) == 2 then
+		local bufnr, timer = ...
+
+		if timer ~= vim.g._codeium_timer then
+			return
+		end
+
+		vim.g._codeium_timer = nil
+
+		if vim.fn.mode() ~= "i" or bufnr ~= vim.fn.bufnr("") then
+			return
+		end
+	end
+
+	if vim.g._codeium_timer then
+		vim.fn.timer_stop(vim.g._codeium_timer)
+		vim.g._codeium_timer = nil
+	end
+
+	if vim.o.encoding ~= "latin1" and vim.o.encoding ~= "utf-8" then
+		error("Only latin1 and utf-8 are supported")
+		return
+	end
+
+	local other_documents = {}
+	local current_bufnr = vim.fn.bufnr("%")
+	local loaded_buffers = vim.fn.getbufinfo({ bufloaded = 1 })
+	for _, buf in ipairs(loaded_buffers) do
+		if buf.bufnr ~= current_bufnr and vim.fn.getbufvar(buf.bufnr, "&filetype") ~= "" then
+			table.insert(other_documents, M.get_document(buf.bufnr, 1, 1))
+		end
+	end
+
+	local bufnr = vim.fn.bufnr("")
+	local data = {
+		document = M.get_document(bufnr, vim.fn.line("."), vim.fn.col(".")),
+		editor_options = util.get_editor_options(bufnr),
+		other_documents = other_documents,
+	}
+
+	if completions and completions.request_data == data then
+		return
+	end
+
+	local request_data = vim.deepcopy(data)
+
+	request_nonce = request_nonce + 1
+	local request_id = request_nonce
+
+	vim.b._codeium_status = 1
+
+	print("requesting")
+	server.request_completion(data.document, data.editor_options, data.other_documents, function(success, json)
+		if not success then
+			return
+		end
+
+		if json and json.state and json.state.state == "CODEIUM_STATE_SUCCESS" and json.completionItems then
+			M.handle_completions(json.completionItems)
+		end
+	end)
+	completions = {
+		request_data = request_data,
+		request_id = request_id,
+	}
+end
+
+function M.handle_completions(completion_items)
+	if not completions then
+		print("completions was cleared")
+		return
+	end
+	print(vim.inspect(completion_items))
+	completions.items = completion_items
+	completions.index = 0
+	RenderCurrentCompletion()
+end
+
+function M.DebouncedComplete()
+	M.Clear()
+	if vim.g.codeium_manual or not server.is_healthy() then
+		return
+	end
+	local current_buf = vim.fn.bufnr("")
+	vim.g._codeium_timer = vim.fn.timer_start(options.idle_delay, function()
+		M.Complete(current_buf, vim.g._codeium_timer)
+	end)
+end
+
+function M.CycleOrComplete()
+	if M.GetCurrentCompletionItem() == nil then
+		M.Complete()
+	else
+		M.CycleCompletions(1)
+	end
+end
+
+return M

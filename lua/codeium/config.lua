@@ -23,6 +23,12 @@ function M.defaults()
 		enable_index_service = true,
 		search_max_workspace_file_count = 5000,
 		file_watch_max_dir_count = 50000,
+		enable_cmp_source = true,
+		virtual_text = {
+			enabled = false,
+			idle_delay = 75,
+			virtual_text_priority = 65535,
+		},
 		workspace_root = {
 			use_lsp = true,
 			find_root = nil,
