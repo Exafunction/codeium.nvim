@@ -99,12 +99,21 @@ function M.setup(_server, _options)
 		end
 	end
 
-	-- vim.api.nvim_create_autocmd({ "ColorScheme", "VimEnter" }, {
-	-- 	group = augroup,
-	-- 	callback = function()
-	-- 		vim.fn["s:SetStyle"]()
-	-- 	end,
-	-- })
+	vim.api.nvim_create_autocmd({ "ColorScheme", "VimEnter" }, {
+		group = augroup,
+		callback = function()
+			M.set_style()
+		end,
+	})
+end
+
+function M.set_style()
+	if vim.fn.has("termguicolors") == 1 and vim.o.termguicolors then
+		vim.api.nvim_set_hl(0, "CodeiumSuggestion", { fg = "#808080", default = true })
+	else
+		vim.api.nvim_set_hl(0, "CodeiumSuggestion", { ctermfg = 244, default = true })
+	end
+	vim.api.nvim_set_hl(0, "CodeiumAnnotation", { link = "Normal", default = true })
 end
 
 function M.get_completion_text()
@@ -228,8 +237,8 @@ local function RenderCurrentCompletion()
 		local text = part.text
 
 		if
-				(part.type == "COMPLETION_PART_TYPE_INLINE" and idx == 1)
-				or part.type == "COMPLETION_PART_TYPE_INLINE_MASK"
+			(part.type == "COMPLETION_PART_TYPE_INLINE" and idx == 1)
+			or part.type == "COMPLETION_PART_TYPE_INLINE_MASK"
 		then
 			local completion_prefix = part.prefix or ""
 			local completion_line = completion_prefix .. text
