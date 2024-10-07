@@ -58,29 +58,29 @@ function M.setup(_server, _options)
 
 	if config.options.virtual_text.map_keys then
 		bindings = config.options.virtual_text.key_bindings
-		if bindings.clear then
+		if bindings.clear and bindings.clear ~= "" then
 			vim.keymap.set("i", bindings.accept, function()
 				M.clear()
 			end, { silent = true })
 		end
 
-		if bindings.next then
+		if bindings.next and bindings.next ~= "" then
 			vim.keymap.set("i", bindings.next, function()
 				M.cycle_completions(1)
 			end, { silent = true })
 		end
 
-		if bindings.prev then
+		if bindings.prev and bindings.prev ~= "" then
 			vim.keymap.set("i", bindings.prev, function()
 				M.cycle_completions(-1)
 			end, { silent = true })
 		end
 
-		if bindings.accept then
+		if bindings.accept and bindings.accept ~= "" then
 			vim.keymap.set("i", bindings.accept, M.accept, { silent = true, expr = true, script = true, nowait = true })
 		end
 
-		if bindings.accept_word then
+		if bindings.accept_word and bindings.accept_word ~= "" then
 			vim.keymap.set(
 				"i",
 				bindings.accept_word,
@@ -89,7 +89,7 @@ function M.setup(_server, _options)
 			)
 		end
 
-		if bindings.accept_line then
+		if bindings.accept_line and bindings.accept_line ~= "" then
 			vim.keymap.set(
 				"i",
 				bindings.accept_line,
@@ -228,8 +228,8 @@ local function RenderCurrentCompletion()
 		local text = part.text
 
 		if
-			(part.type == "COMPLETION_PART_TYPE_INLINE" and idx == 1)
-			or part.type == "COMPLETION_PART_TYPE_INLINE_MASK"
+				(part.type == "COMPLETION_PART_TYPE_INLINE" and idx == 1)
+				or part.type == "COMPLETION_PART_TYPE_INLINE_MASK"
 		then
 			local completion_prefix = part.prefix or ""
 			local completion_line = completion_prefix .. text
