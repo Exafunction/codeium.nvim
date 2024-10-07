@@ -7,7 +7,8 @@ local M = {}
 
 local hlgroup = "CodeiumSuggestion"
 local request_nonce = 0
-local using_codeium_status = 0
+local using_status_line = false
+local codeium_status = "idle"
 
 local completions
 local idle_timer
@@ -57,7 +58,7 @@ function M.setup(_server, _options)
 	})
 
 	if config.options.virtual_text.map_keys then
-		bindings = config.options.virtual_text.key_bindings
+		local bindings = config.options.virtual_text.key_bindings
 		if bindings.clear and bindings.clear ~= "" then
 			vim.keymap.set("i", bindings.accept, function()
 				M.clear()
@@ -194,7 +195,7 @@ end
 
 local nvim_extmark_ids = {}
 
-local function ClearCompletion()
+local function clear_completion()
 	local namespace = vim.api.nvim_create_namespace("codeium")
 	for _, id in ipairs(nvim_extmark_ids) do
 		vim.api.nvim_buf_del_extmark(0, namespace, id)
@@ -202,10 +203,9 @@ local function ClearCompletion()
 	nvim_extmark_ids = {}
 end
 
-local function RenderCurrentCompletion()
-	ClearCompletion()
-	-- TODO enable
-	-- M.RedrawStatusLine()
+local function render_current_completion()
+	clear_completion()
+	M.redraw_status_line()
 
 	if not vim.fn.mode():match("^[iR]") then
 		return ""
@@ -223,8 +223,7 @@ local function RenderCurrentCompletion()
 	for idx, part in ipairs(parts) do
 		local row = (part.line or 0) + 1
 		if row ~= vim.fn.line(".") then
-			-- TODO: Implement codeium#log#Warn
-			-- codeium#log#Warn('Ignoring completion, line number is not the current line.')
+			notify.debug("Ignoring completion, line number is not the current line.")
 			goto continue
 		end
 		local _col
@@ -296,9 +295,8 @@ local function RenderCurrentCompletion()
 end
 
 function M.clear(...)
-	vim.b._codeium_status = 0
-	-- TODO enable
-	-- M.RedrawStatusLine()
+	codeium_status = "idle"
+	M.redraw_status_line()
 	if idle_timer then
 		vim.fn.timer_stop(idle_timer)
 		idle_timer = nil
@@ -308,12 +306,12 @@ function M.clear(...)
 		if completions.cancel then
 			completions.cancel()
 		end
-		RenderCurrentCompletion()
+		render_current_completion()
 		completions = nil
 	end
 
 	if select("#", ...) == 0 then
-		RenderCurrentCompletion()
+		render_current_completion()
 	end
 	return ""
 end
@@ -332,11 +330,11 @@ function M.cycle_completions(n)
 
 	completions.index = completions.index % n_items
 
-	RenderCurrentCompletion()
+	render_current_completion()
 end
 
 local warn_filetype_missing = true
-function M.get_document(buf_id, cur_line, cur_col)
+local function get_document(buf_id, cur_line, cur_col)
 	local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
 	if vim.bo[buf_id].eol then
 		table.insert(lines, "")
@@ -396,13 +394,13 @@ function M.complete(...)
 	local loaded_buffers = vim.fn.getbufinfo({ bufloaded = 1 })
 	for _, buf in ipairs(loaded_buffers) do
 		if buf.bufnr ~= current_bufnr and vim.fn.getbufvar(buf.bufnr, "&filetype") ~= "" then
-			table.insert(other_documents, M.get_document(buf.bufnr, 1, 1))
+			table.insert(other_documents, get_document(buf.bufnr, 1, 1))
 		end
 	end
 
 	local bufnr = vim.fn.bufnr("")
 	local data = {
-		document = M.get_document(bufnr, vim.fn.line("."), vim.fn.col(".")),
+		document = get_document(bufnr, vim.fn.line("."), vim.fn.col(".")),
 		editor_options = util.get_editor_options(bufnr),
 		other_documents = other_documents,
 	}
@@ -416,7 +414,7 @@ function M.complete(...)
 	request_nonce = request_nonce + 1
 	local request_id = request_nonce
 
-	vim.b._codeium_status = 1
+	codeium_status = "waiting"
 
 	local cancel = server.request_completion(
 		data.document,
@@ -425,6 +423,7 @@ function M.complete(...)
 		function(success, json)
 			if completions.request_id == request_id then
 				completions.cancel = nil
+				codeium_status = "idle"
 			end
 			if not success then
 				return
@@ -448,7 +447,8 @@ function M.handle_completions(completion_items)
 	end
 	completions.items = completion_items
 	completions.index = 0
-	RenderCurrentCompletion()
+	codeium_status = "completions"
+	render_current_completion()
 end
 
 function M.debounced_complete()
@@ -467,6 +467,56 @@ function M.cycle_or_complete()
 		M.complete()
 	else
 		M.cycle_completions(1)
+	end
+end
+
+function M.status()
+	if codeium_status == "completions" then
+		if completions and completions.items and completions.index then
+			return {
+				state = "completions",
+				current = completions.index + 1,
+				total = #completions.items,
+			}
+		else
+			return { state = "idle" }
+		end
+	else
+		return { state = codeium_status }
+	end
+end
+
+function M.status_string()
+	using_status_line = true
+	local status = M.status()
+
+	if status.state == "completions" then
+		if status.total > 0 then
+			return string.format("%d/%d", status.current, status.total)
+		else
+			return " 0 "
+		end
+	elseif status.state == "waiting" then
+		return " * "
+	elseif status.state == "idle" then
+		return " 0 "
+	else
+		return "   "
+	end
+end
+
+local refresh_fn = function()
+	vim.cmd("redrawstatus")
+end
+
+function M.set_statusbar_refresh(refresh)
+	using_status_line = true
+	refresh_fn = refresh
+end
+
+function M.redraw_status_line()
+	if using_status_line then
+		refresh_fn()
 	end
 end
 
