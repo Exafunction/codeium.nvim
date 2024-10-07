@@ -83,17 +83,17 @@ in your default browser using the xdg-open command.
 - `enterprise_mode`: enable enterprise mode
 - `detect_proxy`: enable or disable proxy detection
 - `enable_chat`: enable chat functionality
-- `enable_cmp_source`: defaults to true. Set `false` to disable the `cmp` source
-- `virtual_text`: configuration for the virtual text feature
-  - `enabled`: defaults to false. Set `true` to enable the virtual text feature
+- `enable_cmp_source`: defaults to true. Set `false` to disable registering a `cmp` source
+- `virtual_text`: configuration for showing completions in virtual text
+  - `enabled`: defaults to `false`. Set `true` to enable the virtual text feature
   - `manual`: Set `true` to only trigger Codeium using a manual Lua function call
-  - `idle_delay`: defaults to 75. Time in ms to wait before clearing virtual text
-  - `virtual_text_priority`: defaults to 65535. Priority of the virtual text
-  - `map_keys`: defaults to true. Set `false` to disable the default key bindings
+  - `idle_delay`: defaults to `75`. Time in ms to wait before requesting completions after typing stops.
+  - `virtual_text_priority`: defaults to `65535`. Priority of the virtual text
+  - `map_keys`: defaults to `true`. Set `false` to not set any key bindings for completions
   - `key_bindings`: key bindings for accepting and cycling through completions
     - `accept`: key binding for accepting a completion, default is `<Tab>`
-    - `accept_word`: key binding for accepting the next word, default is not set
-    - `accept_line`: key binding for accepting the next line, default is not set
+    - `accept_word`: key binding for accepting only the next word, default is not set
+    - `accept_line`: key binding for accepting only the next line, default is not set
     - `clear`: key binding for clearing the virtual text, default is `<C-[>`
     - `next`: key binding for cycling to the next completion, default is `<M-]>`
     - `prev`: key binding for cycling to the previous completion, default is `<M-[>`
@@ -147,6 +147,66 @@ cmp.setup({
 })
 ```
 
+### Virtual Text
+
+The plugin supports showing completions in virtual text. Set `virtual_text.enabled` in the options to `true` to enable it.
+
+```lua
+require("codeium").setup({
+    -- Optionally disable cmp source if using virtual text only
+    enable_cmp_source = false,
+    virtual_text = {
+        enabled = true,
+
+        -- These are the defaults
+
+        -- Set to true if you never want completions to be shown automatically.
+        manual = false,
+        -- How long to wait (in ms) before requesting completions after typing stops.
+        idle_delay = 75,
+        -- Priority of the virtual text. This usually ensures that the completions appear on top of
+        -- other plugins that also add virtual text, such as LSP inlay hints, but can be modified if
+        -- desired.
+        virtual_text_priority = 65535,
+        -- Set to false to disable all key bindings for managing completions.
+        map_keys = true,
+        -- Key bindings for managing completions in virtual text mode.
+        key_bindings = {
+            -- Accept the current completion.
+            accept = "<Tab>",
+            -- Accept the next word.
+            accept_word = "",
+            -- Accept the next line.
+            accept_line = "",
+            -- Clear the virtual text.
+            clear = "<C-[>",
+            -- Cycle to the next completion.
+            next = "<M-]>",
+            -- Cycle to the previous completion.
+            prev = "<M-[>",
+        }
+    }
+})
+```
+
+The plugin defines a number of key bindings for managing completion in virtual text mode. You can override these by
+setting `virtual_text.key_bindings`. If you don't want any key bindings, set `virtual_text.map_keys` to `false`, or
+you can set specific bindings to `""`. Note that setting a value to `nil` looks the same as not setting in Lua, so the
+default will be used in that case.
+
+When `manual` mode is enabled, you can call any of these functions to show completions:
+
+```lua
+-- Request completions immediately.
+require('codeium.virtual_text').complete()
+
+-- Cycle to the next or previous completion.
+require('codeium.virtual_text').cycle_or_complete()
+
+-- Complete only after idle_delay has passed with no other calls to debounced_complete().
+require('codeium.virtual_text').debounced_complete()
+```
+
 ### Workspace Root Directory
 
 The plugin uses a few techniques to find the workspace root directory, which helps to inform the autocomplete and chat context. 
@@ -186,8 +246,6 @@ require('codeium').setup({
 	}
 })
 ```
-
-
 
 ## Troubleshooting
 
