@@ -442,8 +442,8 @@ function Server:new()
 			cursor_offset = 0,
 			text = text,
 			line_ending = line_ending,
-			absolute_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p"),
-			relative_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":"),
+			absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
+			workspace_uri = util.get_uri(util.get_relative_path(bufnr)),
 		}
 
 		request("RefreshContextForIdeAction", {
