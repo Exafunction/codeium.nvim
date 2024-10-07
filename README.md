@@ -191,8 +191,8 @@ require("codeium").setup({
 
 The plugin defines a number of key bindings for managing completion in virtual text mode. You can override these by
 setting `virtual_text.key_bindings`. If you don't want any key bindings, set `virtual_text.map_keys` to `false`, or
-you can set specific bindings to `""`. Note that setting a value to `nil` looks the same as not setting in Lua, so the
-default will be used in that case.
+you can set specific bindings to `""`. Note that in Lua, setting a value to `nil` looks the same as not setting it at
+all, so the default key binding will be installed if you use `nil`.
 
 When `manual` mode is enabled, you can call any of these functions to show completions:
 
@@ -200,7 +200,7 @@ When `manual` mode is enabled, you can call any of these functions to show compl
 -- Request completions immediately.
 require('codeium.virtual_text').complete()
 
--- Cycle to the next or previous completion.
+-- Request a completion, or cycle to the next if we already have some
 require('codeium.virtual_text').cycle_or_complete()
 
 -- Complete only after idle_delay has passed with no other calls to debounced_complete().
