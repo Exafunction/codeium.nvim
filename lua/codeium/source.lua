@@ -93,19 +93,23 @@ function Source:get_position_encoding_kind()
 	return "utf-8"
 end
 
-require("cmp").event:on("confirm_done", function(event)
-	if
-		event.entry
-		and event.entry.source
-		and event.entry.source.name == "codeium"
-		and event.entry.completion_item
-		and event.entry.completion_item.codeium_completion_id
-		and event.entry.source.source
-		and event.entry.source.source.server
-	then
-		event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
-	end
-end)
+-- Import `cmp` but don't error if it is not installed, as it might be when only using virtual text
+local imported_cmp, cmp = pcall(require, "cmp")
+if imported_cmp then
+	cmp.event:on("confirm_done", function(event)
+		if
+			event.entry
+			and event.entry.source
+			and event.entry.source.name == "codeium"
+			and event.entry.completion_item
+			and event.entry.completion_item.codeium_completion_id
+			and event.entry.source.source
+			and event.entry.source.source.server
+		then
+			event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
+		end
+	end)
+end
 
 function Source:complete(params, callback)
 	local context = params.context
