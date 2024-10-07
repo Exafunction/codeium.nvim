@@ -270,7 +270,7 @@ local function render_current_completion()
 			end
 		end
 
-		local priority = config.options.virtual_text.priority
+		local priority = config.options.virtual_text.virtual_text_priority
 		local _virtcol = vim.fn.virtcol({ row, _col + diff })
 		local data = { id = idx + 1, hl_mode = "combine", virt_text_win_col = _virtcol - 1, priority = priority }
 		if part.type == "COMPLETION_PART_TYPE_INLINE_MASK" then
