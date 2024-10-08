@@ -343,7 +343,7 @@ local function get_document(buf_id, cur_line, cur_col)
 	local filetype = vim.bo[buf_id].filetype:gsub("%..*", "")
 	local language = enums.filetype_aliases[filetype == "" and "text" or filetype] or filetype
 	if filetype == "" and warn_filetype_missing ~= false then
-		notify.warn("No filetype detected. This will affect completion quality.")
+		notify.debug("No filetype detected. This will affect completion quality.")
 		warn_filetype_missing = false
 	end
 	local editor_language = vim.bo[buf_id].filetype == "" and "unspecified" or vim.bo[buf_id].filetype
