@@ -348,13 +348,15 @@ local function get_document(buf_id, cur_line, cur_col)
 	end
 	local editor_language = vim.bo[buf_id].filetype == "" and "unspecified" or vim.bo[buf_id].filetype
 
+	local line_ending = util.get_newline(buf_id)
 	local doc = {
-		text = table.concat(lines, vim.api.nvim_get_option_value("ff", { buf = buf_id }) == "dos" and "\r\n" or "\n"),
+		text = table.concat(lines, line_ending),
 		editor_language = editor_language,
 		language = enums.languages[language] or enums.languages.unspecified,
 		cursor_position = { row = cur_line - 1, col = cur_col - 1 },
 		absolute_uri = util.get_uri(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf_id), ":p")),
-		line_ending = util.get_newline(buf_id),
+		workspace_uri = util.get_uri(util.get_project_root()),
+		line_ending = line_ending,
 	}
 
 	return doc
