@@ -443,7 +443,7 @@ function Server:new()
 			text = text,
 			line_ending = line_ending,
 			absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
-			workspace_uri = util.get_uri(util.get_relative_path(bufnr)),
+			relative_path_migrate_me_to_workspace_uri = util.get_uri(util.get_relative_path(bufnr)),
 		}
 
 		request("RefreshContextForIdeAction", {
