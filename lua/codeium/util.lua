@@ -36,7 +36,7 @@ function M.get_newline(bufnr)
 end
 
 function M.get_relative_path(bufnr)
-	return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":")
+	return vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":.")
 end
 
 function M.get_uri(path)
