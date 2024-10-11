@@ -1,7 +1,6 @@
 local enums = require("codeium.enums")
 local config = require("codeium.config")
 local io = require("codeium.io")
-local Path = require("plenary.path")
 local M = {}
 
 function M.fallback_call(calls, with_filter, fallback_value)
@@ -35,13 +34,6 @@ end
 
 function M.get_newline(bufnr)
 	return enums.line_endings[vim.bo[bufnr].fileformat] or "\n"
-end
-
--- Get the relative path from the project root
-function M.get_relative_path(bufnr)
-	local buf_path = vim.api.nvim_buf_get_name(bufnr)
-	local start_path = M.get_project_root(bufnr)
-	return Path:new(buf_path):make_relative(start_path)
 end
 
 local cached_roots = {}
