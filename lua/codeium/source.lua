@@ -15,8 +15,8 @@ local function codeium_to_cmp(comp, offset, right)
 	local documentation = comp.completion.text
 
 	local label = documentation:sub(offset)
-	if label:sub(- #right) == right then
-		label = label:sub(1, - #right - 1)
+	if label:sub(-#right) == right then
+		label = label:sub(1, -#right - 1)
 	end
 
 	-- We get the completion part that has the largest offset
@@ -92,7 +92,7 @@ local function get_other_documents(bufnr)
 	local other_documents = {}
 
 	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype ~= '' and buf ~= bufnr then
+		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype ~= "" and buf ~= bufnr then
 			table.insert(other_documents, buf_to_codeium(buf))
 		end
 	end
@@ -187,7 +187,7 @@ function Source:complete(params, callback)
 			language = language,
 			cursor_position = { row = cursor.row - 1, col = cursor.col - 1 },
 			absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
-			workspace_uri = util.get_uri(util.get_relative_path(bufnr)),
+			workspace_uri = util.get_uri(util.get_project_root()),
 			line_ending = line_ending,
 			cursor_offset = cursor_offset,
 		},
@@ -205,7 +205,6 @@ function Source:complete(params, callback)
 			end
 		end
 	)
-
 end
 
 return Source

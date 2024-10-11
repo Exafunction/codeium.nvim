@@ -442,8 +442,8 @@ function Server:new()
 			cursor_offset = 0,
 			text = text,
 			line_ending = line_ending,
-			absolute_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":p"),
-			relative_path = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":"),
+			absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
+			workspace_uri = util.get_uri(util.get_project_root()),
 		}
 
 		request("RefreshContextForIdeAction", {
@@ -453,12 +453,11 @@ function Server:new()
 				notify.error("failed refresh context: " .. err.out)
 				return
 			end
-		end
-		)
+		end)
 	end
 
 	function m.add_workspace()
-		local project_root = vim.fn.getcwd()
+		local project_root = util.get_project_root()
 		-- workspace already tracked by server
 		if workspaces[project_root] then
 			return
