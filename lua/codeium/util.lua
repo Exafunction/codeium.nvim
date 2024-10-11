@@ -37,7 +37,9 @@ function M.get_newline(bufnr)
 end
 
 local cached_roots = {}
-local function _get_project_root()
+--- @param cwd string The current working directory
+--- @return string The workspace root
+local function _get_project_root(cwd)
 	if config.options.workspace_root.find_root then
 		root = config.options.workspace_root.find_root()
 		if root then
@@ -77,7 +79,7 @@ function M.get_project_root()
 		return cached_roots[wd]
 	end
 
-	local root = _get_project_root()
+	local root = _get_project_root(wd)
 	cached_roots[wd] = root
 	return root
 end
