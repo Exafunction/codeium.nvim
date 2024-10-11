@@ -23,6 +23,14 @@ function M.defaults()
 		enable_index_service = true,
 		search_max_workspace_file_count = 5000,
 		file_watch_max_dir_count = 50000,
+		project_root_paths = {
+			".bzr",
+			".git",
+			".hg",
+			".svn",
+			"_FOSSIL_",
+			"package.json",
+		},
 	}
 end
 

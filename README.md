@@ -83,6 +83,7 @@ in your default browser using the xdg-open command.
 - `enterprise_mode`: enable enterprise mode
 - `detect_proxy`: enable or disable proxy detection
 - `enable_chat`: enable chat functionality
+- `project_root_paths`: paths to files that indicate a workspace root
 - `tools`: paths to binaries used by the plugin:
 
   - `uname`: not needed on Windows, defaults given.
@@ -128,6 +129,27 @@ cmp.setup({
     }
 })
 ```
+
+### Workspace Root Directory
+
+For the chat feature, the plugin will determine the workspace root directory by searching upward from the
+current working directory for one of the files listed in the `project_root_paths` option.
+
+The default list of files and directories is
+
+```lua
+project_root_paths = {
+	".bzr",
+	".git",
+	".hg",
+	".svn",
+	"_FOSSIL_",
+	"package.json",
+}
+```
+
+You can replace this list by passing `project_root_paths` when calling `setup`. If none of these paths are
+found, the plugin will treat the current working directory as the root.
 
 ## Troubleshooting
 
