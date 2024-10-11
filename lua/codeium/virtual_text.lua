@@ -10,10 +10,22 @@ local request_nonce = 0
 local using_status_line = false
 local codeium_status = "idle"
 
+--- @class Completions
+--- @field items table[] | nil
+--- @field index number | nil
+--- @field cancel function
+--- @field request_id number
+--- @field request_data table
+
+--- @type Completions | nil
 local completions
 local idle_timer
 
-local server = nil
+local server = {
+	is_healthy = function()
+		return false
+	end,
+}
 local options
 function M.setup(_server, _options)
 	server = _server
@@ -110,11 +122,10 @@ end
 
 function M.set_style()
 	if vim.fn.has("termguicolors") == 1 and vim.o.termguicolors then
-		vim.api.nvim_set_hl(0, "CodeiumSuggestion", { fg = "#808080", default = true })
+		vim.api.nvim_set_hl(0, hlgroup, { fg = "#808080", default = true })
 	else
-		vim.api.nvim_set_hl(0, "CodeiumSuggestion", { ctermfg = 244, default = true })
+		vim.api.nvim_set_hl(0, hlgroup, { ctermfg = 244, default = true })
 	end
-	vim.api.nvim_set_hl(0, "CodeiumAnnotation", { link = "Normal", default = true })
 end
 
 function M.get_completion_text()
@@ -276,7 +287,7 @@ local function render_current_completion()
 		if part.type == "COMPLETION_PART_TYPE_INLINE_MASK" then
 			data.virt_text = { { text, hlgroup } }
 		elseif part.type == "COMPLETION_PART_TYPE_BLOCK" then
-			local lines = vim.split(text, "\n", true)
+			local lines = vim.split(text, "\n")
 			if lines[#lines] == "" then
 				table.remove(lines)
 			end
@@ -317,7 +328,7 @@ function M.clear(...)
 end
 
 function M.cycle_completions(n)
-	if M.get_current_completion_item() == nil then
+	if not completions or M.get_current_completion_item() == nil then
 		return
 	end
 
@@ -411,7 +422,7 @@ function M.complete(...)
 		data.editor_options,
 		data.other_documents,
 		function(success, json)
-			if completions.request_id == request_id then
+			if completions and completions.request_id == request_id then
 				completions.cancel = nil
 				codeium_status = "idle"
 			end
