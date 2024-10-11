@@ -353,13 +353,9 @@ local function get_document(buf_id, cur_line, cur_col)
 		editor_language = editor_language,
 		language = enums.languages[language] or enums.languages.unspecified,
 		cursor_position = { row = cur_line - 1, col = cur_col - 1 },
-		absolute_path_migrate_me_to_uri = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf_id), ":p"),
+		absolute_uri = util.get_uri(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf_id), ":p")),
+		line_ending = util.get_newline(buf_id),
 	}
-
-	local line_ending = vim.api.nvim_get_option_value("ff", { buf = buf_id }) == "dos" and "\r\n" or "\n"
-	if line_ending then
-		doc.line_ending = line_ending
-	end
 
 	return doc
 end
@@ -389,16 +385,8 @@ function M.complete(...)
 		return
 	end
 
-	local other_documents = {}
-	local current_bufnr = vim.fn.bufnr("%")
-	local loaded_buffers = vim.fn.getbufinfo({ bufloaded = 1 })
-	for _, buf in ipairs(loaded_buffers) do
-		if buf.bufnr ~= current_bufnr and vim.fn.getbufvar(buf.bufnr, "&filetype") ~= "" then
-			table.insert(other_documents, get_document(buf.bufnr, 1, 1))
-		end
-	end
-
 	local bufnr = vim.fn.bufnr("")
+	local other_documents = util.get_other_documents(bufnr)
 	local data = {
 		document = get_document(bufnr, vim.fn.line("."), vim.fn.col(".")),
 		editor_options = util.get_editor_options(bufnr),
