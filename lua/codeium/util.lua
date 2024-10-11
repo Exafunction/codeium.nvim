@@ -40,20 +40,28 @@ end
 -- Get the relative path from the project root
 function M.get_relative_path(bufnr)
 	local buf_path = vim.api.nvim_buf_get_name(bufnr)
-	local start_path = M.get_project_root()
+	local start_path = M.get_project_root(bufnr)
 	return Path:new(buf_path):make_relative(start_path)
 end
 
 local cached_roots = {}
-function M.get_project_root()
-	local cwd = vim.fn.getcwd()
+local function _get_project_root()
+	if config.options.workspace_root.find_root then
+		root = config.options.workspace_root.find_root()
+		if root then
+			return root
+		end
+	end
 
-	if cached_roots[cwd] then
-		return cached_roots[cwd]
+	if config.options.workspace_root.use_lsp then
+		root = vim.lsp.buf.list_workspace_folders()[0]
+		if root then
+			return root
+		end
 	end
 
 	-- From the CWD, walk up the tree looking for a directory that contains one of the project root files
-	local candidates = config.options.project_root_paths
+	local candidates = config.options.workspace_root.paths
 	local result = vim.fs.find(candidates, {
 		path = cwd,
 		upward = true,
@@ -68,8 +76,18 @@ function M.get_project_root()
 		dir = cwd
 	end
 
-	cached_roots[cwd] = dir
 	return dir
+end
+
+function M.get_project_root()
+	local wd = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":p:h") or vim.fn.getcwd()
+	if cached_roots[wd] then
+		return cached_roots[wd]
+	end
+
+	local root = _get_project_root()
+	cached_roots[wd] = root
+	return root
 end
 
 function M.get_uri(path)

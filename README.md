@@ -83,7 +83,10 @@ in your default browser using the xdg-open command.
 - `enterprise_mode`: enable enterprise mode
 - `detect_proxy`: enable or disable proxy detection
 - `enable_chat`: enable chat functionality
-- `project_root_paths`: paths to files that indicate a workspace root
+- `workspace_root`:
+  - `use_lsp`: Use Neovim's LSP support to find the workspace root, if possible.
+  -	`paths`: paths to files that indicate a workspace root when not using the LSP support
+  - `find_root`: An optional function that the plugin will call to find the workspace root.
 - `tools`: paths to binaries used by the plugin:
 
   - `uname`: not needed on Windows, defaults given.
@@ -132,24 +135,45 @@ cmp.setup({
 
 ### Workspace Root Directory
 
-For the chat feature, the plugin will determine the workspace root directory by searching upward from the
-current working directory for one of the files listed in the `project_root_paths` option.
+The plugin uses a few techniques to find the workspace root directory, which helps to inform the autocomplete and chat context. 
 
-The default list of files and directories is
+1. Call the optional `workspace_root.find_root` function, if provided. This is described below.
+2. Query Neovim's built-in LSP support for the workspace root, if `workspace_root.use_lsp` is not set to `false`.
+3. Search upward in the filesystem for a file or directory in `workspace_root.paths` that indicates a workspace root.
+
+The default configuration is:
 
 ```lua
-project_root_paths = {
-	".bzr",
-	".git",
-	".hg",
-	".svn",
-	"_FOSSIL_",
-	"package.json",
-}
+require('codeium').setup({
+	workspace_root = {
+		use_lsp = true,
+		find_root = nil,
+		paths = {
+			".bzr",
+			".git",
+			".hg",
+			".svn",
+			"_FOSSIL_",
+			"package.json",
+		}
+	}
+})
 ```
 
-You can replace this list by passing `project_root_paths` when calling `setup`. If none of these paths are
-found, the plugin will treat the current working directory as the root.
+The `find_root` function can help the plugin find the workspace root when you are not using Neovim's built-in LSP
+provider. For example, this snippet calls into `coc.nvim` to find the workspace root.
+
+```lua
+require('codeium').setup({
+	workspace_root = {
+		find_root = function()
+			return vim.fn.CocAction("currentWorkspacePath")
+		end
+	}
+})
+```
+
+
 
 ## Troubleshooting
 
