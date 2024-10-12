@@ -177,7 +177,7 @@ require('codeium').setup({
 
 ## Troubleshooting
 
-The plugin log is written to `~/.cache/nvim/codeium.log`.
+The plugin log is written to `~/.cache/nvim/codeium/codeium.log`.
 
 You can set the logging level to one of `trace`, `debug`, `info`, `warn`,
 `error` by exporting the `DEBUG_CODEIUM` environment variable.
