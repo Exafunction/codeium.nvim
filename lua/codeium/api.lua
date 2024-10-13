@@ -166,6 +166,7 @@ function Server:new()
 	local healthy = false
 	local last_heartbeat = nil
 	local last_heartbeat_error = nil
+	local enabled = true
 
 	local function request(fn, payload, callback)
 		local url = "http://127.0.0.1:" .. port .. "/exa.language_server_pb.LanguageServerService/" .. fn
@@ -336,6 +337,9 @@ function Server:new()
 
 	local pending_request = { 0, noop }
 	function m.request_completion(document, editor_options, other_documents, callback)
+		if enabled == false then
+			return
+		end
 		pending_request[2](true)
 
 		local metadata = get_request_metadata()
@@ -526,6 +530,24 @@ function Server:new()
 		if job then
 			job.on_exit = nil
 			job:shutdown()
+		end
+	end
+
+	function m.enable()
+		enabled = true
+		notify.info("Codeium enabled")
+	end
+
+	function m.disable()
+        enabled = false
+        notify.info("Codeium disabled")
+    end
+
+	function m.toggle()
+		if enabled then
+			m.disable()
+		else
+			m.enable()
 		end
 	end
 
