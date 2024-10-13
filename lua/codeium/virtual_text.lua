@@ -8,6 +8,8 @@ local M = {}
 local hlgroup = "CodeiumSuggestion"
 local request_nonce = 0
 local using_status_line = false
+
+--- @type "idle" | "waiting" | "completions"
 local codeium_status = "idle"
 
 --- @class Completions
@@ -22,18 +24,18 @@ local completions
 local idle_timer
 
 local server = {
+	--- This will be replaced by the actual server when setup is called.
 	is_healthy = function()
 		return false
 	end,
 }
-local options
-function M.setup(_server, _options)
+
+function M.setup(_server)
 	server = _server
-	options = _options
 
 	local augroup = vim.api.nvim_create_augroup("codeium_virtual_text", { clear = true })
 
-	if not options.enabled then
+	if not config.options.virtual_text.enabled then
 		return
 	end
 
@@ -458,7 +460,7 @@ function M.debounced_complete()
 		return
 	end
 	local current_buf = vim.fn.bufnr("")
-	idle_timer = vim.fn.timer_start(options.idle_delay, function()
+	idle_timer = vim.fn.timer_start(config.options.virtual_text.idle_delay, function()
 		M.complete(current_buf, idle_timer)
 	end)
 end
