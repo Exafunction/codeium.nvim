@@ -307,7 +307,7 @@ local function render_current_completion()
 	end
 end
 
-function M.clear(...)
+function M.clear()
 	codeium_status = "idle"
 	M.redraw_status_line()
 	if idle_timer then
@@ -323,12 +323,11 @@ function M.clear(...)
 		completions = nil
 	end
 
-	if select("#", ...) == 0 then
-		render_current_completion()
-	end
+	render_current_completion()
 	return ""
 end
 
+--- @param n number
 function M.cycle_completions(n)
 	if not completions or M.get_current_completion_item() == nil then
 		return
@@ -347,6 +346,10 @@ function M.cycle_completions(n)
 end
 
 local warn_filetype_missing = true
+--- @param buf_id number
+--- @param cur_line number
+--- @param cur_col number
+--- @return table
 local function get_document(buf_id, cur_line, cur_col)
 	local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
 	if vim.bo[buf_id].eol then
@@ -375,17 +378,16 @@ local function get_document(buf_id, cur_line, cur_col)
 	return doc
 end
 
-function M.complete(...)
-	if select("#", ...) == 2 then
-		local bufnr, timer = ...
-
-		if timer ~= idle_timer then
+--- @param opts { bufnr: number, timer: any }?
+function M.complete(opts)
+	if opts then
+		if opts.timer ~= idle_timer then
 			return
 		end
 
 		idle_timer = nil
 
-		if vim.fn.mode() ~= "i" or bufnr ~= vim.fn.bufnr("") then
+		if vim.fn.mode() ~= "i" or opts.bufnr ~= vim.fn.bufnr("") then
 			return
 		end
 	end
@@ -460,8 +462,8 @@ function M.debounced_complete()
 		return
 	end
 	local current_buf = vim.fn.bufnr("")
-	idle_timer = vim.fn.timer_start(config.options.virtual_text.idle_delay, function()
-		M.complete(current_buf, idle_timer)
+	idle_timer = vim.fn.timer_start(config.options.virtual_text.idle_delay, function(timer)
+		M.complete({ bufnr = current_buf, timer = timer })
 	end)
 end
 
