@@ -301,7 +301,7 @@ function M.generate_uuid()
 end
 
 function M.gunzip(path, callback)
-	if M.executable("gzip") then
+	if M.executable("gzip") == 1 then
 		M.job({
 			"gzip",
 			"-d",
@@ -312,7 +312,7 @@ function M.gunzip(path, callback)
 	end
 	local function expandFile(infile)
 		local scriptDirectory = debug.getinfo(1, "S").source:match("^@(.*/)[^/]+$")
-		local command = "& { . "
+		local command = "Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process; & { . "
 			.. vim.fn.shellescape(scriptDirectory .. "../powershell/gzip.ps1")
 			.. "; Expand-File "
 			.. vim.fn.shellescape(infile)
@@ -330,18 +330,10 @@ function M.gunzip(path, callback)
 	local shellquote = vim.o.shellquote
 	local shellxquote = vim.o.shellxquote
 
-	local pwshCoreAvailable = vim.fn.executable("pwsh")
-
-	local isPowershell = vim.o.shell == "pwsh"
-		or vim.o.shell == "pwsh.exe"
-		or vim.o.shell == "powershell"
+	local isPowershell = vim.o.shell == "powershell"
 		or vim.o.shell == "powershell.exe"
 	if not isPowershell then
-		if pwshCoreAvailable then
-			vim.o.shell = "pwsh"
-		else
-			vim.o.shell = "powershell"
-		end
+		vim.o.shell = "powershell"
 		vim.o.shellcmdflag =
 		"-NoLogo -NoProfile -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
 		vim.o.shellredir = "2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode"
@@ -349,9 +341,7 @@ function M.gunzip(path, callback)
 		vim.o.shellquote = ""
 		vim.o.shellxquote = ""
 	end
-	isPowershell = vim.o.shell == "pwsh"
-		or vim.o.shell == "pwsh.exe"
-		or vim.o.shell == "powershell"
+	isPowershell = vim.o.shell == "powershell"
 		or vim.o.shell == "powershell.exe"
 	if isPowershell then
 		expandFile(path)
