@@ -30,6 +30,7 @@ function M.defaults()
 			idle_delay = 75,
 			virtual_text_priority = 65535,
 			map_keys = true,
+			accept_fallback = nil,
 			key_bindings = {
 				accept = "<Tab>",
 				accept_word = nil,

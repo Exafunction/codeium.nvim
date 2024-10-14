@@ -90,6 +90,8 @@ in your default browser using the xdg-open command.
   - `idle_delay`: defaults to `75`. Time in ms to wait before requesting completions after typing stops.
   - `virtual_text_priority`: defaults to `65535`. Priority of the virtual text
   - `map_keys`: defaults to `true`. Set `false` to not set any key bindings for completions
+  - `accept_fallback`: Emulate pressing this key when using the accept key binding but there is no completion. Defaults
+  to "\t"
   - `key_bindings`: key bindings for accepting and cycling through completions
     - `accept`: key binding for accepting a completion, default is `<Tab>`
     - `accept_word`: key binding for accepting only the next word, default is not set
@@ -170,6 +172,9 @@ require("codeium").setup({
         virtual_text_priority = 65535,
         -- Set to false to disable all key bindings for managing completions.
         map_keys = true,
+        -- The key to press when hitting the accept keybinding but no completion is showing.
+        -- Defaults to \t normally or <c-n> when a popup is showing. 
+        accept_fallback = nil,
         -- Key bindings for managing completions in virtual text mode.
         key_bindings = {
             -- Accept the current completion.
