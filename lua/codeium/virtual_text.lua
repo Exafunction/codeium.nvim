@@ -349,7 +349,7 @@ local warn_filetype_missing = true
 --- @param buf_id number
 --- @param cur_line number
 --- @param cur_col number
---- @return table
+--- @return table | nil
 local function get_document(buf_id, cur_line, cur_col)
 	local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
 	if vim.bo[buf_id].eol then
@@ -363,6 +363,13 @@ local function get_document(buf_id, cur_line, cur_col)
 		warn_filetype_missing = false
 	end
 	local editor_language = vim.bo[buf_id].filetype == "" and "unspecified" or vim.bo[buf_id].filetype
+
+	local buf_name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf_id), ":p")
+	-- If it's already any sort of URI, this might be a special buffer for some plugins, so we ignore it to
+	-- avoid an LS error.
+	if buf_name:match("^%w+://") ~= nil then
+		return nil
+	end
 
 	local line_ending = util.get_newline(buf_id)
 	local doc = {
@@ -403,9 +410,14 @@ function M.complete(opts)
 	end
 
 	local bufnr = vim.fn.bufnr("")
+	local document = get_document(bufnr, vim.fn.line("."), vim.fn.col("."))
+	if document == nil then
+		return
+	end
+
 	local other_documents = util.get_other_documents(bufnr)
 	local data = {
-		document = get_document(bufnr, vim.fn.line("."), vim.fn.col(".")),
+		document = document,
 		editor_options = util.get_editor_options(bufnr),
 		other_documents = other_documents,
 	}
