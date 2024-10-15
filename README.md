@@ -222,15 +222,15 @@ require('codeium.virtual_text').debounced_complete()
 
 #### Virtual Text Filetypes
 
-You can se the `filetypes` and `deault_filetype_enabled` options in the `virtual_text` table to configure which filetypes
+You can set the `filetypes` and `default_filetype_enabled` options in the `virtual_text` table to configure which filetypes
 should use virtual text.
 
 ```lua
 require('codeium.virtual_text').setup({
     virtual_text = {
         filetypes = { 
-            "python" = true,
-            "markdown" = false
+            python = true,
+            markdown = false
         },
         default_filetype_enabled = true
     }
