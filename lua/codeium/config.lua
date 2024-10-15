@@ -26,6 +26,8 @@ function M.defaults()
 		enable_cmp_source = true,
 		virtual_text = {
 			enabled = false,
+			filetypes = {},
+			default_filetype_enabled = true,
 			manual = false,
 			idle_delay = 75,
 			virtual_text_priority = 65535,

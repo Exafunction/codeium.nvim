@@ -86,6 +86,8 @@ in your default browser using the xdg-open command.
 - `enable_cmp_source`: defaults to true. Set `false` to disable registering a `cmp` source
 - `virtual_text`: configuration for showing completions in virtual text
   - `enabled`: defaults to `false`. Set `true` to enable the virtual text feature
+  - `filetypes`: A mapping of filetype to true or false, to enable virtual text
+  - `default_filetype_enabled`: Whether to enable virtual text of not for types not listed in `filetypes`.
   - `manual`: Set `true` to only trigger Codeium using a manual Lua function call
   - `idle_delay`: defaults to `75`. Time in ms to wait before requesting completions after typing stops.
   - `virtual_text_priority`: defaults to `65535`. Priority of the virtual text
@@ -164,6 +166,10 @@ require("codeium").setup({
 
         -- Set to true if you never want completions to be shown automatically.
         manual = false,
+        -- A mapping of filetype to true or false, to enable virtual text.
+        filetypes = {},
+        -- Whether to enable virtual text of not for filetypes not specifically listed above.
+        default_filetype_enabled = true,
         -- How long to wait (in ms) before requesting completions after typing stops.
         idle_delay = 75,
         -- Priority of the virtual text. This usually ensures that the completions appear on top of
@@ -194,6 +200,8 @@ require("codeium").setup({
 })
 ```
 
+#### Virtual Text Keybindings
+
 The plugin defines a number of key bindings for managing completion in virtual text mode. You can override these by
 setting `virtual_text.key_bindings`. If you don't want any key bindings, set `virtual_text.map_keys` to `false`, or
 you can set specific bindings to `""`. Note that in Lua, setting a value to `nil` looks the same as not setting it at
@@ -210,6 +218,23 @@ require('codeium.virtual_text').cycle_or_complete()
 
 -- Complete only after idle_delay has passed with no other calls to debounced_complete().
 require('codeium.virtual_text').debounced_complete()
+```
+
+#### Virtual Text Filetypes
+
+You can se the `filetypes` and `deault_filetype_enabled` options in the `virtual_text` table to configure which filetypes
+should use virtual text.
+
+```lua
+require('codeium.virtual_text').setup({
+    virtual_text = {
+        filetypes = { 
+            "python" = true,
+            "markdown" = false
+        },
+        default_filetype_enabled = true
+    }
+})
 ```
 
 ### Show Codeium status in statusline

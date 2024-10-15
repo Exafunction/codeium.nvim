@@ -410,6 +410,11 @@ function M.complete(opts)
 	end
 
 	local bufnr = vim.fn.bufnr("")
+
+	if not M.filetype_enabled(bufnr) then
+		return
+	end
+
 	local document = get_document(bufnr, vim.fn.line("."), vim.fn.col("."))
 	if document == nil then
 		return
@@ -468,9 +473,18 @@ function M.handle_completions(completion_items)
 	render_current_completion()
 end
 
+function M.filetype_enabled(bufnr)
+	local filetype = vim.bo[bufnr].filetype
+	local enabled = config.options.virtual_text.filetypes[filetype]
+	if enabled == nil then
+		return config.options.virtual_text.default_filetype_enabled
+	end
+	return enabled
+end
+
 function M.debounced_complete()
 	M.clear()
-	if config.options.virtual_text.manual or not server.is_healthy() then
+	if config.options.virtual_text.manual or not server.is_healthy() or not M.filetype_enabled(vim.fn.bufnr("")) then
 		return
 	end
 	local current_buf = vim.fn.bufnr("")
