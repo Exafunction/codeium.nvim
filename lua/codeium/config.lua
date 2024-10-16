@@ -37,7 +37,7 @@ function M.defaults()
 				accept = "<Tab>",
 				accept_word = nil,
 				accept_line = nil,
-				clear = "<C-[>",
+				clear = nil,
 				next = "<M-]>",
 				prev = "<M-[>",
 			},

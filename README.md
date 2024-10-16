@@ -98,7 +98,7 @@ in your default browser using the xdg-open command.
     - `accept`: key binding for accepting a completion, default is `<Tab>`
     - `accept_word`: key binding for accepting only the next word, default is not set
     - `accept_line`: key binding for accepting only the next line, default is not set
-    - `clear`: key binding for clearing the virtual text, default is `<C-[>`
+    - `clear`: key binding for clearing the virtual text, default is not set
     - `next`: key binding for cycling to the next completion, default is `<M-]>`
     - `prev`: key binding for cycling to the previous completion, default is `<M-[>`
 - `workspace_root`:
