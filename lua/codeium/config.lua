@@ -35,9 +35,9 @@ function M.defaults()
 			accept_fallback = nil,
 			key_bindings = {
 				accept = "<Tab>",
-				accept_word = nil,
-				accept_line = nil,
-				clear = nil,
+				accept_word = false,
+				accept_line = false,
+				clear = false,
 				next = "<M-]>",
 				prev = "<M-[>",
 			},

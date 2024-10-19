@@ -186,11 +186,11 @@ require("codeium").setup({
             -- Accept the current completion.
             accept = "<Tab>",
             -- Accept the next word.
-            accept_word = "",
+            accept_word = false,
             -- Accept the next line.
-            accept_line = "",
+            accept_line = false,
             -- Clear the virtual text.
-            clear = "<C-[>",
+            clear = false,
             -- Cycle to the next completion.
             next = "<M-]>",
             -- Cycle to the previous completion.
@@ -204,8 +204,7 @@ require("codeium").setup({
 
 The plugin defines a number of key bindings for managing completion in virtual text mode. You can override these by
 setting `virtual_text.key_bindings`. If you don't want any key bindings, set `virtual_text.map_keys` to `false`, or
-you can set specific bindings to `""`. Note that in Lua, setting a value to `nil` looks the same as not setting it at
-all, so the default key binding will be installed if you use `nil`.
+you can set specific bindings to `false`.
 
 When `manual` mode is enabled, you can call any of these functions to show completions:
 
