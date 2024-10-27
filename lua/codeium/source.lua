@@ -72,33 +72,6 @@ local function codeium_to_cmp(comp, offset, right)
 	}
 end
 
-local function buf_to_codeium(bufnr)
-	local filetype = enums.filetype_aliases[vim.bo[bufnr].filetype] or vim.bo[bufnr].filetype or "text"
-	local language = enums.languages[filetype] or enums.languages.unspecified
-	local line_ending = util.get_newline(bufnr)
-	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
-	table.insert(lines, "")
-	local text = table.concat(lines, line_ending)
-	return {
-		editor_language = filetype,
-		language = language,
-		text = text,
-		line_ending = line_ending,
-		absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
-	}
-end
-
-local function get_other_documents(bufnr)
-	local other_documents = {}
-
-	for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-		if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype ~= "" and buf ~= bufnr then
-			table.insert(other_documents, buf_to_codeium(buf))
-		end
-	end
-	return other_documents
-end
-
 local Source = {
 	server = nil,
 }
@@ -120,19 +93,23 @@ function Source:get_position_encoding_kind()
 	return "utf-8"
 end
 
-require("cmp").event:on("confirm_done", function(event)
-	if
-		event.entry
-		and event.entry.source
-		and event.entry.source.name == "codeium"
-		and event.entry.completion_item
-		and event.entry.completion_item.codeium_completion_id
-		and event.entry.source.source
-		and event.entry.source.source.server
-	then
-		event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
-	end
-end)
+-- Import `cmp` but don't error if it is not installed, as it might be when only using virtual text
+local imported_cmp, cmp = pcall(require, "cmp")
+if imported_cmp then
+	cmp.event:on("confirm_done", function(event)
+		if
+			event.entry
+			and event.entry.source
+			and event.entry.source.name == "codeium"
+			and event.entry.completion_item
+			and event.entry.completion_item.codeium_completion_id
+			and event.entry.source.source
+			and event.entry.source.source.server
+		then
+			event.entry.source.source.server.accept_completion(event.entry.completion_item.codeium_completion_id)
+		end
+	end)
+end
 
 function Source:complete(params, callback)
 	local context = params.context
@@ -178,7 +155,7 @@ function Source:complete(params, callback)
 		callback(completions)
 	end
 
-	local other_documents = get_other_documents(bufnr)
+	local other_documents = util.get_other_documents(bufnr)
 
 	self.server.request_completion(
 		{
