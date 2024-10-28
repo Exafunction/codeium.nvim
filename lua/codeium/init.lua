@@ -38,11 +38,11 @@ function M.setup(options)
 	})
 
 	local source = Source:new(s)
-	if options.enable_cmp_source then
+	if require("codeium.config").options.enable_cmp_source then
 		require("cmp").register_source("codeium", source)
 	end
 
-	require("codeium.virtual_text").setup(s, require("codeium.config").options.virtual_text)
+	require("codeium.virtual_text").setup(s)
 end
 
 return M
