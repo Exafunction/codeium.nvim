@@ -31,7 +31,7 @@ function M.check()
 	instance:checkhealth(health_logger)
 end
 
----@param server Server
+---@param server codeium.Server
 function M.register(server)
 	instance = server
 end

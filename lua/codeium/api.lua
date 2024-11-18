@@ -45,7 +45,7 @@ end
 
 ---
 --- Codeium Server API
---- @class Server
+--- @class codeium.Server
 --- @field port? number
 --- @field job? plenary.job
 --- @field current_cookie? number
@@ -177,7 +177,7 @@ function Server.authenticate()
 	prompt()
 end
 
----@return Server
+---@return codeium.Server
 function Server.new()
 	local m = setmetatable({}, Server)
 	m.__index = m
@@ -353,7 +353,7 @@ function Server:do_heartbeat()
 end
 
 function Server:request_completion(document, editor_options, other_documents, callback)
-	if not self.enabled then
+	if not self.enabled or not self.port then
 		return
 	end
 	self.pending_request[2](true)
@@ -415,14 +415,14 @@ function Server:request_completion(document, editor_options, other_documents, ca
 				end
 			end
 
-			notify.error("completion request failed", err)
+			notify.error("completion request failed: " .. err.response.body)
 			complete(false, nil)
 			return
 		end
 
 		local ok, json = pcall(vim.fn.json_decode, body)
 		if not ok then
-			notify.error("completion request failed", "invalid JSON:", json)
+			notify.error("completion request failed: " .. "invalid JSON:" .. json)
 			return
 		end
 
