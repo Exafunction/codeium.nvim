@@ -153,6 +153,29 @@ cmp.setup({
 })
 ```
 
+### blink.cmp
+
+Configuration example for [blink.cmp](https://github.com/Saghen/blink.cmp):
+
+```lua
+{
+  'saghen/blink.cmp',
+  dependencies = {
+    {
+      'Exafunction/codeium.nvim',
+    },
+  },
+  opts = {
+    sources = {
+      default = { 'lsp', 'path', 'snippets', 'buffer', 'codeium' },
+      providers = {
+        codeium = { name = 'Codeium', module = 'codeium.blink', async = true },
+      },
+    },
+  },
+}
+```
+
 ### Virtual Text
 
 The plugin supports showing completions in virtual text. Set `virtual_text.enabled` in the options to `true` to enable it.
