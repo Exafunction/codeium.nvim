@@ -173,7 +173,7 @@ local function completion_inserter(current_completion, insert_text)
 
 	server.accept_completion(current_completion.completion.completionId)
 
-	return delete_range .. insert_text .. cursor_text
+	return '<C-g>u' .. delete_range .. insert_text .. cursor_text
 end
 
 function M.accept()
