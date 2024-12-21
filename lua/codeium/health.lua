@@ -13,7 +13,7 @@ local error = vim.health.error or vim.health.report_error
 local info = vim.health.info or vim.health.report_info
 local health_logger = { ok = ok, info = info, warn = warn, error = error }
 
-local checkhealth = nil
+local instance = nil
 
 function M.check()
 	start("Codeium: checking Codeium server status")
@@ -24,15 +24,16 @@ function M.check()
 		ok("API key properly loaded")
 	end
 
-	if checkhealth == nil then
+	if instance == nil then
 		warn("Codeium: checkhealth is not set")
 		return
 	end
-	checkhealth(health_logger)
+	instance:checkhealth(health_logger)
 end
 
-function M.register(callback)
-	checkhealth = callback
+---@param server codeium.Server
+function M.register(server)
+	instance = server
 end
 
 return M

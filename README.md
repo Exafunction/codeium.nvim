@@ -71,6 +71,8 @@ your browser and pasting it into API token request.
 To use Codeium Chat, execute the `:Codeium Chat` command. The chat will be opened
 in your default browser using the xdg-open command.
 
+You can globaly enable or disable Codeium Completion with `:Codeium Toggle` command.
+
 ## Options
 
 - `config_path`: the path to the config file, used to store the API key.
@@ -149,6 +151,29 @@ cmp.setup({
         })
     }
 })
+```
+
+### blink.cmp
+
+Configuration example for [blink.cmp](https://github.com/Saghen/blink.cmp):
+
+```lua
+{
+  'saghen/blink.cmp',
+  dependencies = {
+    {
+      'Exafunction/codeium.nvim',
+    },
+  },
+  opts = {
+    sources = {
+      default = { 'lsp', 'path', 'snippets', 'buffer', 'codeium' },
+      providers = {
+        codeium = { name = 'Codeium', module = 'codeium.blink', async = true },
+      },
+    },
+  },
+}
 ```
 
 ### Virtual Text
