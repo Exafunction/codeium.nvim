@@ -180,7 +180,7 @@ end
 
 
 local function delete_file_range(start_offset, end_offset)
-	if end_offset <= start_offset then
+	if tonumber(end_offset) <= tonumber(start_offset) then
 		return
 	end
 
