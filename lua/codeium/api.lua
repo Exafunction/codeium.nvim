@@ -377,7 +377,7 @@ function Server:new()
 		}, function(body, err)
 			if err then
 				if err.status == 503 or err.status == 408 or config.options.quiet then
-					-- Service Unavailable or Timeout error
+					-- Service Unavailable or Timeout error or in quiet mode
 					return complete(false, nil)
 				end
 
