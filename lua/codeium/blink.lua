@@ -2,6 +2,10 @@
 local enums = require("codeium.enums")
 local util = require("codeium.util")
 
+--- @class blink.cmp.Source
+--- @field server codeium.Server
+local M = {}
+
 local function utf8len(str)
 	if not str then
 		return 0
@@ -12,9 +16,9 @@ end
 local function codeium_to_item(comp, offset, right)
 	local documentation = comp.completion.text
 
-	local label = documentation:sub(offset)
-	if label:sub(-#right) == right then
-		label = label:sub(1, -#right - 1)
+	local insert_text = documentation:sub(offset)
+	if insert_text:sub(-#right) == right then
+		insert_text = insert_text:sub(1, -#right - 1)
 	end
 
 	-- We get the completion part that has the largest offset
@@ -45,41 +49,42 @@ local function codeium_to_item(comp, offset, right)
 		},
 	}
 
-	local display_label = string.match(label, "([^\n]*)")
-	if display_label ~= label then
+	local display_label = string.match(insert_text, "([^\n]*)")
+	if display_label ~= insert_text then
 		display_label = display_label .. " "
 	end
 
 	return {
-		type = 1,
-		documentation = {
-			kind = "markdown",
-			value = table.concat({
-				"```" .. vim.api.nvim_get_option_value("filetype", {}),
-				label,
-				"```",
-			}, "\n"),
-		},
 		label = display_label,
-		insertText = label,
+		insertText = insert_text,
 		kind = require('blink.cmp.types').CompletionItemKind.Text,
 		insertTextFormat = vim.lsp.protocol.InsertTextFormat.PlainText,
+		kind_name = 'Codeium',
+		kind_hl_group = 'BlinkCmpKindCopilot',
+		kind_icon = '󰘦',
 		textEdit = {
-			newText = label,
+			newText = insert_text,
 			insert = range,
 			replace = range,
 		},
-		cmp = {
-			kind_text = "Codeium",
-			kind_hl_group = "BlinkCmpKindCopilot",
-		},
-		codeium_completion_id = comp.completion.completionId,
 	}
 end
 
---- @class blink.cmp.Source
---- @field server codeium.Server
-local M = {}
+--- Resolve the completion item
+function M:resolve(item, callback)
+	item = vim.deepcopy(item)
+
+	item.documentation = {
+		kind = 'markdown',
+		value = table.concat({
+			"```" .. vim.api.nvim_get_option_value("filetype", {}),
+			item.insertText,
+			"```",
+		}, "\n"),
+	}
+
+	callback(item)
+end
 
 function M.new()
 	local o = {}
