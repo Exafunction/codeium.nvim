@@ -35,6 +35,7 @@ Feel free to create an issue/PR if you want to see anything else implemented.
 ```lua
 use {
     "Exafunction/codeium.nvim",
+	as = "codeium",
     requires = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
@@ -51,6 +52,7 @@ use {
 ```lua
 {
     "Exafunction/codeium.nvim",
+	name = "codeium",
     dependencies = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
