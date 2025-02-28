@@ -1,22 +1,24 @@
+--- Module for the codeium completion source
 local enums = require("codeium.enums")
 local util = require("codeium.util")
+
+--- @class blink.cmp.Source
+--- @field server codeium.Server
+local M = {}
 
 local function utf8len(str)
 	if not str then
 		return 0
 	end
-	-- TODO: Figure out how to convert the document encoding to UTF8 length
-	-- Bonus points for doing it with raw codepoints instead of converting the
-	-- string wholesale
 	return str:len()
 end
 
-local function codeium_to_cmp(comp, offset, right)
+local function codeium_to_item(comp, offset, right)
 	local documentation = comp.completion.text
 
-	local label = documentation:sub(offset)
-	if label:sub(-#right) == right then
-		label = label:sub(1, -#right - 1)
+	local insert_text = documentation:sub(offset)
+	if insert_text:sub(-#right) == right then
+		insert_text = insert_text:sub(1, -#right - 1)
 	end
 
 	-- We get the completion part that has the largest offset
@@ -47,88 +49,69 @@ local function codeium_to_cmp(comp, offset, right)
 		},
 	}
 
+	local display_label = string.match(insert_text, "([^\n]*)")
+	if display_label ~= insert_text then
+		display_label = display_label .. " "
+	end
+
 	return {
-		type = 1,
-		documentation = {
-			kind = "markdown",
-			value = table.concat({
-				"```" .. vim.api.nvim_buf_get_option(0, "filetype"),
-				label,
-				"```",
-			}, "\n"),
-		},
-		label = label,
-		insertText = label,
+		label = display_label,
+		insertText = insert_text,
+		kind = require('blink.cmp.types').CompletionItemKind.Text,
+		insertTextFormat = vim.lsp.protocol.InsertTextFormat.PlainText,
+		kind_name = 'Codeium',
+		kind_hl_group = 'BlinkCmpKindCopilot',
+		kind_icon = '󰘦',
 		textEdit = {
-			newText = label,
+			newText = insert_text,
 			insert = range,
 			replace = range,
 		},
-		cmp = {
-			kind_text = "Codeium",
-			kind_hl_group = "CmpItemKindCodeium",
-		},
-		codeium_completion_id = comp.completion.completionId,
 	}
 end
 
-local Source = {
-	server = nil,
-}
-Source.__index = Source
+--- Resolve the completion item
+function M:resolve(item, callback)
+	item = vim.deepcopy(item)
 
-function Source:new(server)
+	item.documentation = {
+		kind = 'markdown',
+		value = table.concat({
+			"```" .. vim.api.nvim_get_option_value("filetype", {}),
+			item.insertText,
+			"```",
+		}, "\n"),
+	}
+
+	callback(item)
+end
+
+function M.new()
 	local o = {}
-	setmetatable(o, self)
-
-	o.server = server
-	return o
+	o.server = require("codeium").s
+	return setmetatable(o, { __index = M })
 end
 
-function Source:is_available()
-	return self.server:is_healthy()
+function M:get_trigger_characters()
+	return { '"', "`", "[", "]", ".", " ", "\n" }
+end
+--
+function M:enabled()
+	return self.server.enabled
 end
 
-function Source:get_position_encoding_kind()
-	return "utf-8"
-end
-
--- Import `cmp` but don't error if it is not installed, as it might be when only using virtual text
-local imported_cmp, cmp = pcall(require, "cmp")
-if imported_cmp then
-	cmp.event:on("confirm_done", function(event)
-		if
-			event.entry
-			and event.entry.source
-			and event.entry.source.name == "codeium"
-			and event.entry.completion_item
-			and event.entry.completion_item.codeium_completion_id
-			and event.entry.source.source
-			and event.entry.source.source.server
-		then
-			event.entry.source.source.server:accept_completion(event.entry.completion_item.codeium_completion_id)
-		end
-	end)
-end
-
-function Source:complete(params, callback)
-	local context = params.context
-	local offset = params.offset
-	local cursor = context.cursor
-	local bufnr = context.bufnr
-	local filetype = enums.filetype_aliases[context.filetype] or context.filetype or "text"
+function M:get_completions(ctx, callback)
+	local offset = ctx.bounds.start_col
+	local cursor = ctx.cursor
+	local bufnr = ctx.bufnr
+	local filetype = vim.api.nvim_get_option_value("filetype", { buf = ctx.bufnr })
+	filetype = enums.filetype_aliases[filetype] or filetype or "text"
 	local language = enums.languages[filetype] or enums.languages.unspecified
-	local after_line = context.cursor_after_line
-	local before_line = context.cursor_before_line
+	local after_line = string.sub(ctx.line, cursor[2])
+	local before_line = string.sub(ctx.line, 1, cursor[2] - 1)
 	local line_ending = util.get_newline(bufnr)
 	local line_ending_len = utf8len(line_ending)
 	local editor_options = util.get_editor_options(bufnr)
-	local buf_name = vim.api.nvim_buf_get_name(bufnr)
-
-	if buf_name == "" then
-		callback(nil)
-		return
-	end
 
 	-- We need to calculate the number of bytes prior to the current character,
 	-- that starts with all the prior lines
@@ -136,11 +119,11 @@ function Source:complete(params, callback)
 
 	-- For the current line, we want to exclude any extra characters that were
 	-- entered after the popup displayed
-	lines[cursor.row] = context.cursor_line
+	lines[cursor[1]] = ctx.line
 
 	-- We exclude the current line from the loop below, so add it's length here
 	local cursor_offset = utf8len(before_line)
-	for i = 1, (cursor.row - 1) do
+	for i = 1, (cursor[1] - 1) do
 		local line = lines[i]
 		cursor_offset = cursor_offset + utf8len(line) + line_ending_len
 	end
@@ -155,10 +138,15 @@ function Source:complete(params, callback)
 		for _, comp in ipairs(completion_items) do
 			if not duplicates[comp.completion.text] then
 				duplicates[comp.completion.text] = true
-				table.insert(completions, codeium_to_cmp(comp, offset, after_line))
+				table.insert(completions, codeium_to_item(comp, offset, after_line))
 			end
 		end
-		callback(completions)
+		callback({
+			is_incomplete_forward = false,
+			is_incomplete_backward = false,
+			items = completions,
+			context = ctx,
+		})
 	end
 
 	local other_documents = util.get_other_documents(bufnr)
@@ -168,8 +156,8 @@ function Source:complete(params, callback)
 			text = text,
 			editor_language = filetype,
 			language = language,
-			cursor_position = { row = cursor.row - 1, col = cursor.col - 1 },
-			absolute_uri = util.get_uri(buf_name),
+			cursor_position = { row = cursor[1] - 1, col = cursor[2] },
+			absolute_uri = util.get_uri(vim.api.nvim_buf_get_name(bufnr)),
 			workspace_uri = util.get_uri(util.get_project_root()),
 			line_ending = line_ending,
 			cursor_offset = cursor_offset,
@@ -178,16 +166,17 @@ function Source:complete(params, callback)
 		other_documents,
 		function(success, json)
 			if not success then
-				callback(nil)
+				return nil
 			end
 
 			if json and json.state and json.state.state == "CODEIUM_STATE_SUCCESS" and json.completionItems then
 				handle_completions(json.completionItems)
 			else
-				callback(nil)
+				return nil
 			end
 		end
 	)
+	return function() end
 end
 
-return Source
+return M
