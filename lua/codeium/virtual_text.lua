@@ -92,14 +92,21 @@ function M.setup(_server)
 		end
 
 		if bindings.accept and bindings.accept ~= "" then
-			vim.keymap.set("i", bindings.accept, M.accept, { silent = true, expr = true, script = true, nowait = true })
+			vim.keymap.set("i", bindings.accept, function()
+					if not M.has_suggestions() then return bindings.accept end
+					M.accept_suggestion()
+				end,
+				{ silent = true, expr = true, script = true, nowait = true })
 		end
 
 		if bindings.accept_word and bindings.accept_word ~= "" then
 			vim.keymap.set(
 				"i",
 				bindings.accept_word,
-				M.accept_next_word,
+				function()
+					if not M.has_suggestions() then return bindings.accept_word end
+					M.accept_word()
+				end,
 				{ silent = true, expr = true, script = true, nowait = true }
 			)
 		end
@@ -108,7 +115,10 @@ function M.setup(_server)
 			vim.keymap.set(
 				"i",
 				bindings.accept_line,
-				M.accept_next_line,
+				function()
+					if not M.has_suggestions() then return bindings.accept_line end
+					M.accept_line()
+				end,
 				{ silent = true, expr = true, script = true, nowait = true }
 			)
 		end
@@ -121,6 +131,18 @@ function M.setup(_server)
 		end,
 	})
 end
+
+M.accept_suggestion = vim.schedule_wrap(function()
+	M.accept()
+end)
+
+M.accept_line = vim.schedule_wrap(function()
+	M.accept_next_line()
+end)
+
+M.accept_word = vim.schedule_wrap(function()
+	M.accept_next_word()
+end)
 
 function M.set_style()
 	if vim.fn.has("termguicolors") == 1 and vim.o.termguicolors then
@@ -136,15 +158,64 @@ function M.get_completion_text()
 	return completion_text or ""
 end
 
-local function completion_inserter(current_completion, insert_text)
-	local default = config.options.virtual_text.accept_fallback or (vim.fn.pumvisible() == 1 and "<C-N>" or "\t")
+local function str_to_lines(str)
+	return vim.fn.split(str, "\n")
+end
 
+local function move_cursor(offset)
+	local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+	local target_row, target_col = row, col + offset
+	while target_col < 0 and target_row > 1 do
+		target_row = target_row - 1
+		local prev_line = vim.api.nvim_buf_get_lines(0, target_row - 1, target_row, false)[1]
+		target_col = #prev_line + target_col + 1
+	end
+
+	if target_col < 0 then
+		target_col = 0
+	end
+
+	vim.api.nvim_win_set_cursor(0, { target_row, target_col })
+end
+
+
+local function delete_file_range(start_offset, end_offset)
+	if tonumber(end_offset) <= tonumber(start_offset) then
+		return
+	end
+
+	local start_line = vim.fn.byte2line(start_offset + 1)
+	local end_line = vim.fn.byte2line(end_offset)
+
+	local start_col = start_offset - vim.fn.line2byte(start_line) + 1
+	local end_col = end_offset - vim.fn.line2byte(end_line) + 1
+
+	local start_line_content = vim.fn.getline(start_line)
+	local updated_start_line = start_line_content:sub(1, start_col)
+
+	local end_line_content = vim.fn.getline(end_line)
+	local updated_end_line = end_line_content:sub(end_col + 1)
+
+	if start_line == end_line then
+		local updated_line = updated_start_line .. updated_end_line
+		vim.fn.setline(start_line, updated_line)
+	else
+		vim.fn.setline(start_line, updated_start_line)
+		vim.fn.setline(end_line, updated_end_line)
+		vim.api.nvim_buf_set_lines(0, start_line, end_line - 1, false, {})
+	end
+
+	vim.api.nvim_win_set_cursor(0, { start_line, start_col })
+end
+
+
+local function completion_inserter(current_completion, insert_text)
 	if not (vim.fn.mode():match("^[iR]")) then
-		return default
+		return
 	end
 
 	if current_completion == nil then
-		return default
+		return
 	end
 
 	local range = current_completion.range
@@ -156,29 +227,24 @@ local function completion_inserter(current_completion, insert_text)
 
 	local text = insert_text .. suffix_text
 	if text == "" then
-		return default
+		return
 	end
 
-	local delete_range = ""
-	if end_offset - start_offset > 0 then
-		local delete_bytes = end_offset - start_offset
-		local delete_chars = vim.fn.strchars(vim.fn.strpart(vim.fn.getline("."), 0, delete_bytes))
-		delete_range = ' <Esc>"_x0"_d' .. delete_chars .. "li"
-	end
+	delete_file_range(start_offset, end_offset)
 
-	local insert_text = '<C-R><C-O>=v:lua.require("codeium.virtual_text").get_completion_text()<CR>'
 	M.completion_text = text
 
-	local cursor_text = delta == 0 and "" or '<C-O>:exe "go" line2byte(line("."))+col(".")+(' .. delta .. ")<CR>"
-
 	server.accept_completion(current_completion.completion.completionId)
+	local lines = str_to_lines(text)
 
-	return '<C-g>u' .. delete_range .. insert_text .. cursor_text
+	vim.api.nvim_put(lines, "c", false, true)
+
+	move_cursor(delta)
 end
 
 function M.accept()
 	local current_completion = M.get_current_completion_item()
-	return completion_inserter(current_completion, current_completion and current_completion.completion.text or "")
+	completion_inserter(current_completion, current_completion and current_completion.completion.text or "")
 end
 
 function M.accept_next_word()
@@ -190,13 +256,20 @@ function M.accept_next_word()
 	local prefix_text = completion_parts[1].prefix or ""
 	local completion_text = completion_parts[1].text or ""
 	local next_word = completion_text:match("^%W*%w*")
-	return completion_inserter(current_completion, prefix_text .. next_word)
+	completion_inserter(current_completion, prefix_text .. next_word)
 end
 
 function M.accept_next_line()
 	local current_completion = M.get_current_completion_item()
 	local text = current_completion and current_completion.completion.text:gsub("\n.*$", "") or ""
-	return completion_inserter(current_completion, text)
+	completion_inserter(current_completion, text)
+end
+
+function M.has_suggestions()
+	local current_completion = M.get_current_completion_item()
+	local suffix = current_completion and current_completion.suffix or {}
+	local suffix_text = suffix and suffix.text or ""
+	return current_completion and current_completion.completion.text .. suffix_text
 end
 
 function M.get_current_completion_item()
