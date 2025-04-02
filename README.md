@@ -1,24 +1,24 @@
 <p align="center">
-  <img width="300" alt="Codeium" src="codeium.svg"/>
+  <img width="300" alt="Windsurf" src="windsurf.png"/>
 </p>
 
 ---
 
 [![Discord](https://img.shields.io/discord/1027685395649015980?label=community&color=5865F2&logo=discord&logoColor=FFFFFF)](https://discord.gg/3XFf78nAx5)
-[![Twitter Follow](https://img.shields.io/badge/style--blue?style=social&logo=twitter&label=Follow%20%40codeiumdev)](https://twitter.com/intent/follow?screen_name=codeiumdev)
-![License](https://img.shields.io/github/license/Exafunction/codeium.nvim)
-[![Docs](https://img.shields.io/badge/Codeium%20Docs-09B6A2)](https://docs.codeium.com)
-[![Canny Board](https://img.shields.io/badge/Feature%20Requests-6b69ff)](https://codeium.canny.io/feature-requests/)
-[![built with Codeium](https://codeium.com/badges/main)](https://codeium.com?repo_name=exafunction%2Fcodeium.nvim)
+[![Twitter Follow](https://img.shields.io/badge/style--blue?style=social&logo=twitter&label=Follow%20%40windsurf_ai)](https://twitter.com/intent/follow?screen_name=windsurf_ai)
+![License](https://img.shields.io/github/license/Exafunction/windsurf.vim)
+[![Docs](https://img.shields.io/badge/Windsurf%20Docs-09B6A2)](https://docs.windsurf.com)
+[![Canny Board](https://img.shields.io/badge/Feature%20Requests-6b69ff)](https://windsurf.canny.io/feature-requests/)
+[![built with Windsurf](https://windsurf.com/badges/main)](https://windsurf.com?repo_name=exafunction%2Fwindsurf.vim)
 
 [![Visual Studio](https://img.shields.io/visual-studio-marketplace/i/Codeium.codeium?label=Visual%20Studio&logo=visualstudio)](https://marketplace.visualstudio.com/items?itemName=Codeium.codeium)
 [![JetBrains](https://img.shields.io/jetbrains/plugin/d/20540?label=JetBrains)](https://plugins.jetbrains.com/plugin/20540-codeium/)
 [![Open VSX](https://img.shields.io/open-vsx/dt/Codeium/codeium?label=Open%20VSX)](https://open-vsx.org/extension/Codeium/codeium)
 [![Google Chrome](https://img.shields.io/chrome-web-store/users/hobjkcpmjhlegmobgonaagepfckjkceh?label=Google%20Chrome&logo=googlechrome&logoColor=FFFFFF)](https://chrome.google.com/webstore/detail/codeium/hobjkcpmjhlegmobgonaagepfckjkceh)
 
-# codeium.nvim
+# windsurf.nvim
 
-Native [Codeium](https://www.codeium.com/) plugin for Neovim.
+Native [Windsurf](https://www.windsurf.com/) plugin for Neovim.
 
 ## Contributing
 
@@ -34,13 +34,13 @@ Feel free to create an issue/PR if you want to see anything else implemented.
 
 ```lua
 use {
-    "Exafunction/codeium.nvim",
+    "Exafunction/windsurf.nvim",
     requires = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
     },
     config = function()
-        require("codeium").setup({
+        require("windsurf").setup({
         })
     end
 }
@@ -50,13 +50,13 @@ use {
 
 ```lua
 {
-    "Exafunction/codeium.nvim",
+    "Exafunction/windsurf.nvim",
     dependencies = {
         "nvim-lua/plenary.nvim",
         "hrsh7th/nvim-cmp",
     },
     config = function()
-        require("codeium").setup({
+        require("windsurf").setup({
         })
     end
 },
@@ -65,16 +65,16 @@ use {
 ## Usage
 
 After installation and configuration, you will need to authenticate with
-Codeium. This can be done by running `:Codeium Auth`, copying the token from
+Windsurf. This can be done by running `:Codeium Auth`, copying the token from
 your browser and pasting it into API token request.
 
-To use Codeium Chat, execute the `:Codeium Chat` command. The chat will be opened
+To use Windsurf Chat, execute the `:Codeium Chat` command. The chat will be opened
 in your default browser using the xdg-open command.
 
 ## Options
 
 - `config_path`: the path to the config file, used to store the API key.
-- `bin_path`: the path to the directory where the Codeium server will be downloaded to.
+- `bin_path`: the path to the directory where the Windsurf server will be downloaded to.
 - `api`: information about the API server to use:
   - `host`: the hostname. Example: `"codeium.example.com"`. Required when using enterprise mode
   - `port`: the port. Defaults to `443`
@@ -128,14 +128,14 @@ cmp.setup({
     -- ...
     sources = {
         -- ...
-        { name = "codeium" }
+        { name = "windsurf" }
     }
 })
 ```
 
-If you are seeing the `codeium` source as unused in `:CmpStatus`, make sure that `nvim-cmp` setup happens before the `codeium.nvim` setup.
+If you are seeing the `windsurf` source as unused in `:CmpStatus`, make sure that `nvim-cmp` setup happens before the `windsurf.nvim` setup.
 
-To set a symbol for codeium using lspkind, use the `Codeium` keyword. Example:
+To set a symbol for windsurf using lspkind, use the `Windsurf` keyword. Example:
 
 ```lua
 cmp.setup({
@@ -145,7 +145,7 @@ cmp.setup({
             mode = "symbol",
             maxwidth = 50,
             ellipsis_char = '...',
-            symbol_map = { Codeium = "", }
+            symbol_map = { Windsurf = "", }
         })
     }
 })
@@ -156,7 +156,7 @@ cmp.setup({
 The plugin supports showing completions in virtual text. Set `virtual_text.enabled` in the options to `true` to enable it.
 
 ```lua
-require("codeium").setup({
+require("windsurf").setup({
     -- Optionally disable cmp source if using virtual text only
     enable_cmp_source = false,
     virtual_text = {
@@ -236,14 +236,14 @@ require('codeium.virtual_text').setup({
 })
 ```
 
-### Show Codeium status in statusline
+### Show Windsurf status in statusline
 
-When using virtual text, Codeium status can be generated by calling `require('codeium.virtual_text').status_string()`. 
-It produces a 3 char long string with Codeium status:
+When using virtual text, Windsurf status can be generated by calling `require('codeium.virtual_text').status_string()`. 
+It produces a 3 char long string with Windsurf status:
 
 - `'3/8'` - third suggestion out of 8
-- `'0'` - Codeium returned no suggestions
-- `'*'` - waiting for Codeium response
+- `'0'` - Windsurf returned no suggestions
+- `'*'` - waiting for Windsurf response
 
 In order to show it in status line add following line to your `.vimrc`:
 
@@ -299,7 +299,7 @@ The plugin uses a few techniques to find the workspace root directory, which hel
 The default configuration is:
 
 ```lua
-require('codeium').setup({
+require('windsurf').setup({
 	workspace_root = {
 		use_lsp = true,
 		find_root = nil,
@@ -319,7 +319,7 @@ The `find_root` function can help the plugin find the workspace root when you ar
 provider. For example, this snippet calls into `coc.nvim` to find the workspace root.
 
 ```lua
-require('codeium').setup({
+require('windsurf').setup({
 	workspace_root = {
 		find_root = function()
 			return vim.fn.CocAction("currentWorkspacePath")
@@ -330,7 +330,7 @@ require('codeium').setup({
 
 ## Troubleshooting
 
-The plugin log is written to `~/.cache/nvim/codeium/codeium.log`.
+The plugin log is written to `~/.cache/nvim/windsurf/windsurf.log`.
 
 You can set the logging level to one of `trace`, `debug`, `info`, `warn`,
 `error` by exporting the `DEBUG_CODEIUM` environment variable.
