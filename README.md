@@ -8,7 +8,7 @@
 [![Twitter Follow](https://img.shields.io/badge/style--blue?style=social&logo=twitter&label=Follow%20%40windsurf_ai)](https://twitter.com/intent/follow?screen_name=windsurf_ai)
 ![License](https://img.shields.io/github/license/Exafunction/windsurf.vim)
 [![Docs](https://img.shields.io/badge/Windsurf%20Docs-09B6A2)](https://docs.windsurf.com)
-[![Canny Board](https://img.shields.io/badge/Feature%20Requests-6b69ff)](https://windsurf.canny.io/feature-requests/)
+[![Canny Board](https://img.shields.io/badge/Feature%20Requests-6b69ff)](https://windsurf.canny.io/)
 [![built with Windsurf](https://windsurf.com/badges/main)](https://windsurf.com?repo_name=exafunction%2Fwindsurf.vim)
 
 [![Visual Studio](https://img.shields.io/visual-studio-marketplace/i/Codeium.codeium?label=Visual%20Studio&logo=visualstudio)](https://marketplace.visualstudio.com/items?itemName=Codeium.codeium)
