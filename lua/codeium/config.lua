@@ -14,6 +14,7 @@ function M.defaults()
 			path = "/",
 			portal_url = "codeium.com",
 		},
+		quiet = false,
 		enterprise_mode = nil,
 		detect_proxy = nil,
 		tools = {},
