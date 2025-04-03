@@ -128,12 +128,12 @@ cmp.setup({
     -- ...
     sources = {
         -- ...
-        { name = "windsurf" }
+        { name = "codeium" }
     }
 })
 ```
 
-If you are seeing the `windsurf` source as unused in `:CmpStatus`, make sure that `nvim-cmp` setup happens before the `windsurf.nvim` setup.
+If you are seeing the `codeium` source as unused in `:CmpStatus`, make sure that `nvim-cmp` setup happens before the `windsurf.nvim` setup.
 
 To set a symbol for windsurf using lspkind, use the `Windsurf` keyword. Example:
 
