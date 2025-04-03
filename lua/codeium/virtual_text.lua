@@ -18,6 +18,7 @@ local codeium_status = "idle"
 --- @field cancel function
 --- @field request_id number
 --- @field request_data table
+--- @field rendered boolean | nil
 
 --- @type Completions | nil
 local completions
@@ -173,7 +174,7 @@ local function completion_inserter(current_completion, insert_text)
 
 	server.accept_completion(current_completion.completion.completionId)
 
-	return '<C-g>u' .. delete_range .. insert_text .. cursor_text
+	return "<C-g>u" .. delete_range .. insert_text .. cursor_text
 end
 
 function M.accept()
@@ -225,9 +226,11 @@ local function render_current_completion()
 	end
 
 	local current_completion = M.get_current_completion_item()
-	if current_completion == nil then
+	if current_completion == nil or not completions then
 		return ""
 	end
+
+	completions.rendered = true
 
 	local parts = current_completion.completionParts or {}
 
@@ -386,7 +389,7 @@ local function get_document(buf_id, cur_line, cur_col)
 end
 
 --- @param opts { bufnr: number, timer: any }?
-function M.complete(opts)
+function M.complete(opts, force_render)
 	if opts then
 		if opts.timer ~= idle_timer then
 			return
@@ -397,6 +400,10 @@ function M.complete(opts)
 		if vim.fn.mode() ~= "i" or opts.bufnr ~= vim.fn.bufnr("") then
 			return
 		end
+	end
+
+	if force_render == nil then
+		force_render = false
 	end
 
 	if idle_timer then
@@ -452,7 +459,7 @@ function M.complete(opts)
 			end
 
 			if json and json.state and json.state.state == "CODEIUM_STATE_SUCCESS" and json.completionItems then
-				M.handle_completions(json.completionItems)
+				M.handle_completions(json.completionItems, force_render)
 			end
 		end
 	)
@@ -463,14 +470,17 @@ function M.complete(opts)
 	}
 end
 
-function M.handle_completions(completion_items)
+function M.handle_completions(completion_items, force_render)
 	if not completions then
 		return
 	end
 	completions.items = completion_items
 	completions.index = 0
+	completions.rendered = false
 	codeium_status = "completions"
-	render_current_completion()
+	if (not config.options.virtual_text.manual_render) or force_render then
+		render_current_completion()
+	end
 end
 
 function M.filetype_enabled(bufnr)
@@ -494,10 +504,16 @@ function M.debounced_complete()
 end
 
 function M.cycle_or_complete()
-	if M.get_current_completion_item() == nil then
-		M.complete()
+	local current_completions = M.get_current_completion_item()
+
+	if current_completions == nil then
+		M.complete(nil, true)
 	else
-		M.cycle_completions(1)
+		if completions and completions.rendered then
+			M.cycle_completions(1)
+		else
+			render_current_completion()
+		end
 	end
 end
 

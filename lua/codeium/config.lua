@@ -30,6 +30,7 @@ function M.defaults()
 			filetypes = {},
 			default_filetype_enabled = true,
 			manual = false,
+			manual_render = false,
 			idle_delay = 75,
 			virtual_text_priority = 65535,
 			map_keys = true,
