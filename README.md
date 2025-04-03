@@ -145,7 +145,7 @@ cmp.setup({
             mode = "symbol",
             maxwidth = 50,
             ellipsis_char = '...',
-            symbol_map = { Windsurf = "", }
+            symbol_map = { Codeium = "", }
         })
     }
 })
