@@ -40,7 +40,7 @@ use {
         "hrsh7th/nvim-cmp",
     },
     config = function()
-        require("windsurf").setup({
+        require("codeium").setup({
         })
     end
 }
@@ -56,7 +56,7 @@ use {
         "hrsh7th/nvim-cmp",
     },
     config = function()
-        require("windsurf").setup({
+        require("codeium").setup({
         })
     end
 },
@@ -156,7 +156,7 @@ cmp.setup({
 The plugin supports showing completions in virtual text. Set `virtual_text.enabled` in the options to `true` to enable it.
 
 ```lua
-require("windsurf").setup({
+require("codeium").setup({
     -- Optionally disable cmp source if using virtual text only
     enable_cmp_source = false,
     virtual_text = {
@@ -299,7 +299,7 @@ The plugin uses a few techniques to find the workspace root directory, which hel
 The default configuration is:
 
 ```lua
-require('windsurf').setup({
+require('codeium').setup({
 	workspace_root = {
 		use_lsp = true,
 		find_root = nil,
@@ -319,7 +319,7 @@ The `find_root` function can help the plugin find the workspace root when you ar
 provider. For example, this snippet calls into `coc.nvim` to find the workspace root.
 
 ```lua
-require('windsurf').setup({
+require('codeium').setup({
 	workspace_root = {
 		find_root = function()
 			return vim.fn.CocAction("currentWorkspacePath")
@@ -330,7 +330,7 @@ require('windsurf').setup({
 
 ## Troubleshooting
 
-The plugin log is written to `~/.cache/nvim/windsurf/windsurf.log`.
+The plugin log is written to `~/.cache/nvim/codeium/codeium.log`.
 
 You can set the logging level to one of `trace`, `debug`, `info`, `warn`,
 `error` by exporting the `DEBUG_CODEIUM` environment variable.
